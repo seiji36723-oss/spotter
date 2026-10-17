@@ -3,3 +3,6 @@
 build/
 local.properties
 *.apk
+*.idsig
+# 配る Android アプリはリポジトリに入れる
+!/SPOTTER.apk

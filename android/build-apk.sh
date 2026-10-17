@@ -21,6 +21,6 @@ aapt package -f -M "$B/AndroidManifest.xml" -S "$SRC/res" -A "$B/assets" -I "$JA
   --min-sdk-version 24 --target-sdk-version 34 --version-code "$VC" --version-name "$VN" -F "$B/unsigned.apk"
 (cd "$B/dex" && aapt add "$B/unsigned.apk" classes.dex > /dev/null)
 zipalign -f 4 "$B/unsigned.apk" "$B/aligned.apk"
-apksigner sign --ks "$KEYSTORE_FILE" --ks-key-alias "${KEY_ALIAS:-spotter}" --ks-pass "pass:$KEYSTORE_PASSWORD" --key-pass "pass:${KEY_PASSWORD:-$KEYSTORE_PASSWORD}" --out SPOTTER.apk "$B/aligned.apk"
+apksigner sign --v4-signing-enabled false --ks "$KEYSTORE_FILE" --ks-key-alias "${KEY_ALIAS:-spotter}" --ks-pass "pass:$KEYSTORE_PASSWORD" --key-pass "pass:${KEY_PASSWORD:-$KEYSTORE_PASSWORD}" --out SPOTTER.apk "$B/aligned.apk"
 rm -rf "$B"
 echo "SPOTTER.apk（バージョン $VN / $VC）"
