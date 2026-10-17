@@ -144,6 +144,13 @@ button { cursor: pointer; }
 .st-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .st-head span { font-size: 11.5px; color: var(--muted); }
 .st-row { display: flex; align-items: baseline; gap: 6px; font-weight: 700; }
+.st-ok { font-size: 13px; font-weight: 700; color: var(--ok); }
+.steps.done { border-left: 5px solid var(--ok); }
+.wk-main { display: flex; align-items: center; gap: 14px; }
+.wk-big { font-size: 15px; font-weight: 700; color: var(--muted); }
+.wk-big b { font-family: var(--font-num); font-size: 44px; line-height: 1; color: var(--ink); }
+.wk-spd { display: flex; flex-direction: column; min-width: 0; font-size: 15px; }
+.wk-spd small { font-size: 12px; color: var(--muted); font-weight: 700; }
 .st-in { width: 7em; border: 0; border-bottom: 2px solid var(--ink); background: transparent; font-family: var(--font-num); font-weight: 700; font-size: 28px; padding: 0 2px; }
 .st-left { margin-left: auto; font-size: 13px; color: var(--h3); }
 .st-left.ok { color: var(--ok); }
@@ -1225,7 +1232,8 @@ button { cursor: pointer; }
   const MIN_PER = { multi: 1 + REST_SEC.multi / 60, single: 1 + REST_SEC.single / 60, abs: 0.75 + REST_SEC.abs / 60 }; // 1セット＋休憩の分
   const CARDIO_AFTER = [15, 20]; // 筋トレ後の有酸素（分）
   const CARDIO_DAY = [30, 45]; // 有酸素の日（分）
-  const STEP_GOAL = [7000, 10000]; // 1日の歩数の目標
+  // 毎日の早歩き：時間と速さで指示（10分でだいたい1,100〜1,200歩）
+  const WALK = { min: 10, speed: "時速5.5〜6km", pace: "1分に110〜120歩・少し息が上がる速さ" };
 
   // ── 状態 ──
   const SETTINGS_VER = 4; // 4: チョコザップの12台（器具の設定はそのまま使う）
@@ -1234,11 +1242,11 @@ button { cursor: pointer; }
   const settings = savedSettings.v === SETTINGS_VER ? Object.assign(defaultSettings(), savedSettings) : defaultSettings();
   settings.equip = Object.fromEntries(EQUIP.map((q) => [q.id, settings.equip[q.id] !== false]));
   if (!MINUTES.includes(settings.minutes)) settings.minutes = 60;
-  Object.assign(LS, { off: "cz_off", steps: "cz_steps", body: "cz_body", nudge: "cz_nudge" });
+  Object.assign(LS, { off: "cz_off", walk: "cz_walk", body: "cz_body", nudge: "cz_nudge" });
   let logs = load(LS.logs, []);
   let cur = load(LS.current, null);
   let offDays = load(LS.off, {}); // 「今日は行けない」と入力した日
-  let steps = load(LS.steps, {}); // 日付ごとの歩数
+  let walks = load(LS.walk, {}); // 早歩きをした日
   let body = load(LS.body, []); // 体重・ウエスト（週1回）
   try { localStorage.removeItem(LS.week); } catch (e) { /* 前の版の週メニューはもう使わない */ }
   let tab = "menu";
@@ -1254,7 +1262,7 @@ button { cursor: pointer; }
   const saveLogs = () => save(LS.logs, logs);
   const saveCur = () => save(LS.current, cur);
   const saveOff = () => save(LS.off, offDays);
-  const saveSteps = () => save(LS.steps, steps);
+  const saveWalks = () => save(LS.walk, walks);
   const saveBody = () => save(LS.body, body);
   saveSettings();
 
@@ -1640,14 +1648,33 @@ button { cursor: pointer; }
     if (left < -1800) stopRest();
   }
 
-  // ── 歩数（夕方に少なければ歩くように促す） ──
-  const stepsToday = () => steps[todayIso()] || 0;
+  // ── 毎日の早歩き（スタートで10分タイマー。夕方までにしていなければ促す） ──
+  const walkedToday = () => !!walks[todayIso()];
+  const walk = { end: 0, id: 0 };
+  function startWalk() {
+    walk.end = Date.now() + WALK.min * 60000;
+    clearInterval(walk.id);
+    walk.id = setInterval(tickWalk, 500);
+    tickWalk();
+  }
+  function stopWalk() { clearInterval(walk.id); walk.end = 0; }
+  function tickWalk() {
+    const left = Math.round((walk.end - Date.now()) / 1000);
+    const el = $("#walkTime");
+    if (el) el.textContent = fmtSec(Math.max(0, left));
+    if (left <= 0) {
+      stopWalk();
+      walks[todayIso()] = true;
+      saveWalks();
+      alarm("早歩き 完了", `${WALK.min}分歩きました`);
+      if (tab === "menu") renderMenu();
+    }
+  }
   function checkSteps() {
-    const now = new Date();
-    if (now.getHours() < 17 || stepsToday() >= STEP_GOAL[0]) return;
+    if (new Date().getHours() < 17 || walkedToday()) return;
     if (load(LS.nudge, "") === todayIso()) return;
     save(LS.nudge, todayIso());
-    notify("今日はあまり歩いていません", `あと${STEP_GOAL[0] - stepsToday()}歩。夕方に少し歩きましょう`);
+    notify("今日の早歩きがまだです", `${WALK.min}分、${WALK.speed}で歩きましょう`);
   }
 
   let toastTimer = 0;
@@ -1810,16 +1837,17 @@ button { cursor: pointer; }
     }).join("")}</div>`;
   }
 
-  // 歩数のカード（目標 7,000〜10,000歩）
+  // 早歩きのカード（時間と速さ）
   function stepsHTML() {
-    const n = stepsToday();
-    const pct = Math.min(100, Math.round((n / STEP_GOAL[1]) * 100));
-    const left = STEP_GOAL[0] - n;
-    return `<div class="steps">
-        <div class="st-head"><b>今日の歩数</b><span>目標 ${STEP_GOAL[0].toLocaleString()}〜${STEP_GOAL[1].toLocaleString()}歩</span></div>
-        <div class="st-row"><input type="number" inputmode="numeric" min="0" step="100" class="st-in" data-act="steps" value="${n || ""}" placeholder="0" aria-label="今日の歩数"><span>歩</span>
-          <span class="st-left ${left > 0 ? "" : "ok"}">${left > 0 ? `あと${left.toLocaleString()}歩` : "✓ 達成"}</span></div>
-        <div class="st-bar"><i style="width:${pct}%"></i><em style="left:${(STEP_GOAL[0] / STEP_GOAL[1]) * 100}%"></em></div>
+    const done = walkedToday();
+    const running = walk.end > Date.now();
+    return `<div class="steps${done ? " done" : ""}">
+        <div class="st-head"><b>今日の早歩き</b>${done ? '<span class="st-ok">✓ 完了</span>' : ""}</div>
+        <div class="wk-main"><span class="wk-big">${running ? `<b id="walkTime">${fmtSec(Math.max(0, Math.round((walk.end - Date.now()) / 1000)))}</b>` : `<b>${WALK.min}</b>分`}</span>
+          <span class="wk-spd"><b>${WALK.speed}</b><small>${WALK.pace}</small></span></div>
+        ${done ? `<button type="button" class="link" data-act="walk-undo">取り消す</button>`
+          : running ? `<button type="button" class="btn" data-act="walk-stop">やめる</button>`
+          : `<div class="row-btns"><button type="button" class="btn primary" data-act="walk-start">スタート</button><button type="button" class="btn ghost" data-act="walk-done">もう歩いた</button></div>`}
       </div>`;
   }
 
@@ -1835,7 +1863,7 @@ button { cursor: pointer; }
     const title = t === "strength" ? `<span class="dh-parts">筋トレ　${parts}</span>` : `<span class="dh-parts">${DAY_TYPES[t]}の日</span>`;
     const tags = [cur.mode && cur.mode !== "normal" ? MODES[cur.mode].name : "", cur.override ? "手で変更" : ""].filter(Boolean).map((x) => `<span class="dh-mode">${x}</span>`).join("");
     // 夕方になっても歩数が少ない日は、いちばん上で促す
-    const walkNudge = now.getHours() >= 17 && stepsToday() < STEP_GOAL[0] ? `<p class="nudge">夕方です。あと${(STEP_GOAL[0] - stepsToday()).toLocaleString()}歩、歩きましょう</p>` : "";
+    const walkNudge = now.getHours() >= 17 && !walkedToday() ? `<p class="nudge">夕方です。早歩き${WALK.min}分（${WALK.speed}）がまだです</p>` : "";
     // 週1回：体重・ウエストを測る日
     const lastBody = body.length ? body.map((b) => b.date).sort().pop() : null;
     const bodyNudge = !lastBody || daysBetween(lastBody, today) >= 7 ? `<button type="button" class="nudge link-like" data-act="goto-body">今日は体重・ウエストを測る日 ›</button>` : "";
@@ -1857,7 +1885,7 @@ button { cursor: pointer; }
       main = `<div class="done-today"><b>✓ 今日の分は記録済み</b><span>明日の予定：${DAY_TYPES[tm.type]}${tm.type === "strength" ? `（メニュー${nextKey()}）` : ""}</span>
         <div class="row-btns"><button type="button" class="btn" data-act="see-today">記録を見る</button><button type="button" class="btn ghost" data-act="show-again">もう少しやる</button></div></div>`;
     } else if (t === "rest") {
-      main = `<div class="rest-day"><b>今日は体を休める日</b><span>歩数の目標だけ意識しましょう</span></div>`;
+      main = `<div class="rest-day"><b>今日は体を休める日</b><span>早歩き${WALK.min}分だけやりましょう</span></div>`;
     } else if (cur.items.length) {
       main = `<div class="list">${orderIdx.map((i) => card(cur.items[i], i)).join("")}</div>
         <button type="button" class="btn primary block" data-act="finish">記録して終える</button>`;
@@ -2051,12 +2079,11 @@ button { cursor: pointer; }
     for (let d = mon; d <= tIso; d = isoAdd(d, 1)) days.push(d);
     const st = days.filter(strengthOn).length;
     const ca = days.filter((d) => typesOn(d).has("cardio")).length;
-    const stepList = days.map((d) => steps[d]).filter((n) => n);
-    const avg = stepList.length ? Math.round(stepList.reduce((a, n) => a + n, 0) / stepList.length) : null;
+    const wd = days.filter((d) => walks[d]).length;
     return `<div class="wsum">
         <span><b>${st}</b>日<small>筋トレ</small></span>
         <span><b>${ca}</b>日<small>有酸素</small></span>
-        <span><b>${avg != null ? avg.toLocaleString() : "—"}</b><small>平均歩数</small></span>
+        <span><b>${wd}</b>日<small>早歩き</small></span>
       </div>`;
   }
 
@@ -2171,13 +2198,13 @@ button { cursor: pointer; }
       <div class="card"><h3>今日の内容</h3><div class="chips">${dtypes}</div></div>
       <div class="card"><h3>筋トレのメニュー（A→B→Cの順）</h3><ul class="menu-def">${menus}</ul></div>
       <div class="card"><h3>1回の時間</h3><div class="chips">${MINUTES.map((m) => chip("minutes", m, `<span class="n">${m}</span>分`, settings.minutes === m)).join("")}</div></div>
-      <div class="card"><h3>通知（休憩の終わり・歩数）</h3>
+      <div class="card"><h3>通知（休憩の終わり・早歩き）</h3>
         ${perm === "granted" ? '<p class="fine">✓ オン</p>' : perm === "unsupported" ? '<p class="fine">この画面では通知を使えません（アプリ版で使えます）</p>' : `<button type="button" class="btn" data-act="notify-on">通知をオンにする</button>`}</div>
       <div class="card"><h3>使える器具</h3><div class="machines">${mc}</div></div>
       <div class="card"><h3>データ</h3>
         <p class="fine">この端末のブラウザに保存（${logs.length}回分）</p>
         <div class="row-btns"><button type="button" class="btn" data-act="export">記録を書き出す</button><button type="button" class="btn" data-act="import-open">記録を読み込む</button></div>
-        ${xfer === "export" ? `<textarea class="xfer" readonly aria-label="書き出した記録">${esc(JSON.stringify({ app: "spotter", v: 2, logs, settings, body, steps, off: offDays }))}</textarea>
+        ${xfer === "export" ? `<textarea class="xfer" readonly aria-label="書き出した記録">${esc(JSON.stringify({ app: "spotter", v: 3, logs, settings, body, walks, off: offDays }))}</textarea>
           <button type="button" class="btn primary" data-act="copy-export">コピーする</button>` : ""}
         ${xfer === "import" ? `<textarea class="xfer" id="importText" placeholder="書き出した記録をここに貼り付け" aria-label="読み込む記録"></textarea>
           <button type="button" class="btn primary" data-act="import-run">読み込む</button>` : ""}
@@ -2244,6 +2271,20 @@ button { cursor: pointer; }
         toast(`今日の内容：${v === "auto" ? "自動" : DAY_TYPES[v]}`);
         break;
       }
+      case "walk-start":
+        startWalk(); renderMenu();
+        break;
+      case "walk-stop":
+        stopWalk(); renderMenu();
+        break;
+      case "walk-done":
+        walks[todayIso()] = true;
+        saveWalks(); renderMenu();
+        break;
+      case "walk-undo":
+        delete walks[todayIso()];
+        saveWalks(); renderMenu();
+        break;
       case "off-today":
         offDays[todayIso()] = true;
         saveOff(); rebuild(null); renderMenu();
@@ -2441,7 +2482,7 @@ button { cursor: pointer; }
         if (data.settings && data.settings.v === SETTINGS_VER && data.settings.equip) { Object.assign(settings, { equip: data.settings.equip }); saveSettings(); }
         // 体重・ウエスト、歩数、行けない日も（同じ日は読み込んだほうを使う）
         if (Array.isArray(data.body)) { const m = new Map(body.map((r) => [r.date, r])); data.body.forEach((r) => r && r.date && m.set(r.date, r)); body = [...m.values()]; saveBody(); }
-        if (data.steps && typeof data.steps === "object") { steps = { ...steps, ...data.steps }; saveSteps(); }
+        if (data.walks && typeof data.walks === "object") { walks = { ...walks, ...data.walks }; saveWalks(); }
         if (data.off && typeof data.off === "object") { offDays = { ...offDays, ...data.off }; saveOff(); }
         xfer = null;
         if (!anyDone()) rebuild();
@@ -2455,7 +2496,7 @@ button { cursor: pointer; }
       case "wipe-yes":
         logs = [];
         offDays = {};
-        steps = {};
+        walks = {};
         body = [];
         Object.assign(settings, defaultSettings());
         try { Object.values(LS).forEach((k) => localStorage.removeItem(k)); } catch (err) { /* 無視 */ }
@@ -2491,12 +2532,7 @@ button { cursor: pointer; }
       saveCur(); renderMenu();
       return;
     }
-    if (act === "steps") {
-      const n = Math.max(0, Math.round(Number(t.value) || 0));
-      if (n) steps[todayIso()] = n; else delete steps[todayIso()];
-      saveSteps(); renderMenu();
-      return;
-    }
+
     if (act === "equip") {
       settings.equip[t.dataset.v] = t.checked;
       settingsChanged();
