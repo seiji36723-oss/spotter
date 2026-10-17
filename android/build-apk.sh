@@ -11,8 +11,8 @@ mkdir -p "$B/gen" "$B/obj" "$B/assets" "$B/dex"
 cp index.html "$B/assets/index.html"
 # package 名は build.gradle の namespace と同じ
 sed 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="app.spotter">#' "$SRC/AndroidManifest.xml" > "$B/AndroidManifest.xml"
-# 更新できるように、バージョン番号は日時（年月日時）で毎回大きくする
-VC=$(date +%y%m%d%H)
+# 更新できるように、バージョン番号は毎回大きくする（1970年からの分数）
+VC=$(( $(date +%s) / 60 ))
 VN="1.$(date +%Y%m%d)"
 aapt package -f -m -J "$B/gen" -M "$B/AndroidManifest.xml" -S "$SRC/res" -I "$JAR"
 javac -nowarn -source 8 -target 8 -bootclasspath "$JAR" -d "$B/obj" "$B/gen/app/spotter/R.java" "$SRC/java/app/spotter/MainActivity.java"

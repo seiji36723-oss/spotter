@@ -129,6 +129,23 @@ button { cursor: pointer; }
 .dh-title b.key.t-rest { background: var(--ok); }
 .dh-title b.key.t-off { background: var(--muted); }
 .dh-check .mini { margin-left: auto; }
+/* 1週間の予定 */
+.wplan { background: var(--surface); border-radius: var(--radius); padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow); }
+.wp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px; }
+.wp-days { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.wp { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0 5px; border-radius: 10px; border: 1.5px solid transparent; min-width: 0; }
+.wp.wp-today { border-color: var(--ink); }
+.wp.past { opacity: .5; }
+.wp-dow { font-size: 11px; font-weight: 700; color: var(--muted); line-height: 1; }
+.wp-date { font-family: var(--font-num); font-size: 15px; font-weight: 700; line-height: 1; }
+.wp-k { position: relative; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--surface-2); color: var(--muted); font-size: 15px; font-weight: 900; }
+.wp.t-strength .wp-k { background: var(--ink); color: var(--bg); }
+.wp.t-cardio .wp-k { background: var(--h3); color: #fff; }
+.wp.t-cardio.opt .wp-k { background: transparent; color: var(--h3); box-shadow: inset 0 0 0 2px var(--h3); }
+.wp.t-rest .wp-k { background: var(--ok); color: #fff; }
+.wp.t-off .wp-k { background: var(--muted); color: var(--bg); }
+.wp-k i { position: absolute; right: -5px; top: -5px; width: 15px; height: 15px; border-radius: 50%; background: var(--ok); color: #fff; font-style: normal; font-size: 10px; line-height: 15px; text-align: center; box-shadow: 0 0 0 2px var(--surface); }
+.wp small { font-size: 10px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; }
 .cpick { display: flex; flex-wrap: wrap; gap: 6px; }
 .how { margin: 0; font-size: 13px; font-weight: 700; color: var(--muted); }
 .spd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; margin-top: 2px; font-size: 13px; font-weight: 700; color: var(--muted); }
@@ -1843,6 +1860,56 @@ button { cursor: pointer; }
     }).join("")}</div>`;
   }
 
+  // ── 1週間の予定。前の日は記録、今日から先は予定どおりに進めた場合のアプリの予定（任意の有酸素はやらない前提） ──
+  let weekOff = 0; // 0：今週、1：来週
+  const WP_LABEL = { cardio: "有酸素", rest: "休み", off: "自宅" };
+  function weekPlan(off) {
+    const today = todayIso();
+    const mon = isoAdd(formatDateISO(mondayOf(new Date())), off * 7);
+    const end = isoAdd(mon, 6);
+    const doneOnDay = (d) => logs.filter((s) => s.date === d && ["strength", "cardio", "home"].includes(sessionType(s)));
+    const plan = {};
+    const real = logs;
+    logs = logs.slice();
+    try {
+      for (let d = today; d <= end; d = isoAdd(d, 1)) {
+        const done = doneOnDay(d).length > 0;
+        if (d === today && done) continue;
+        let p;
+        if (d === today) p = { type: cur.type, optional: cur.optional, day: cur.day };
+        else { p = planFor(d); if (p.type === "strength") p.day = nextKey(); }
+        plan[d] = p;
+        if (!p.optional && (p.type === "strength" || p.type === "cardio")) logs.push({ v: 6, date: d, type: p.type, day: p.day, items: [] });
+      }
+    } finally { logs = real; }
+    return Array.from({ length: 7 }, (_, k) => {
+      const d = isoAdd(mon, k);
+      const ss = d <= today ? doneOnDay(d) : [];
+      if (ss.length) {
+        const st = ss.find((s) => sessionType(s) === "strength");
+        const ty = st ? "strength" : ss.some((s) => sessionType(s) === "cardio") ? "cardio" : "off";
+        return { d, type: ty, day: st && st.day, done: true };
+      }
+      if (d < today) return { d, type: "none" };
+      return { d, ...plan[d] };
+    });
+  }
+  function weekPlanHTML() {
+    const today = todayIso();
+    const days = weekPlan(weekOff).map((w) => {
+      const isS = w.type === "strength";
+      const k = isS ? (w.day ? menuBadge(w.day) : "筋") : w.type === "cardio" ? "有" : w.type === "rest" ? "休" : w.type === "off" ? "家" : "—";
+      const label = isS ? (MENUS[w.day] ? MENUS[w.day].name.replace("＋腹", "") : "筋トレ") : w.type === "cardio" && w.optional ? "任意" : WP_LABEL[w.type] || "";
+      const dt = isoToDate(w.d);
+      const cls = [`t-${w.type}`, w.optional ? "opt" : "", w.d === today ? "wp-today" : w.d < today ? "past" : ""].join(" ");
+      return `<li class="wp ${cls}"><span class="wp-dow">${DOW[dt.getDay()]}</span><span class="wp-date">${dt.getDate()}</span><b class="wp-k">${k}${w.done ? "<i>✓</i>" : ""}</b><small>${label}</small></li>`;
+    }).join("");
+    return `<div class="wplan">
+        <div class="wp-head"><b>${weekOff ? "来週" : "今週"}の予定</b><button type="button" class="mini" data-act="wp-week">${weekOff ? "‹ 今週" : "来週 ›"}</button></div>
+        <ol class="wp-days">${days}</ol>
+      </div>`;
+  }
+
   // 早歩きのカード（速さはこちらで指示、時間は目安を出して本人が入れる。タイマーも使える）
   let walkMin = WALK.min;
   function stepsHTML() {
@@ -1922,6 +1989,7 @@ button { cursor: pointer; }
         <div class="dh-title"><b class="key t-${t}">${badge}</b>${title}${tags}</div>
         <div class="dh-check"><span class="dh-prev">${esc(cur.why)}</span>${offBtn}</div>
       </div>
+      ${weekPlanHTML()}
       ${walkNudge}${bodyNudge}${adv}
       ${cur.notes && cur.notes.length ? `<ul class="notes">${cur.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
       ${pendingRegen ? `<div class="notice"><span>チェック済みのセットがあります。作り直すと消えます。</span>
@@ -2299,6 +2367,10 @@ button { cursor: pointer; }
       case "off-undo":
         delete offDays[todayIso()];
         saveOff(); rebuild(null); renderMenu();
+        break;
+      case "wp-week":
+        weekOff = weekOff ? 0 : 1;
+        renderMenu();
         break;
       case "show-again":
         showAgain = true;

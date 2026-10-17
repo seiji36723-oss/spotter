@@ -36,8 +36,8 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          # 手で作った APK（年月日時の番号）からも更新できるように、同じ数え方にする
-          export VERSION_CODE=$(date +%y%m%d%H) VERSION_NAME="1.$(date +%Y%m%d)"
+          # 手で作った APK（android/build-apk.sh）からも更新できるように、同じ数え方にする
+          export VERSION_CODE=$(( $(date +%s) / 60 )) VERSION_NAME="1.$(date +%Y%m%d)"
           gradle -p android assembleRelease
       - name: 名前をそろえる
         run: cp android/app/build/outputs/apk/release/app-release.apk SPOTTER.apk
