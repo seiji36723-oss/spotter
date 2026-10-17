@@ -1,0 +1,5 @@
+# Android のビルドで作られるもの
+.gradle/
+build/
+local.properties
+*.apk
