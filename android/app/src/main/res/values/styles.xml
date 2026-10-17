@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- 起動した瞬間は白い画面（すぐ HTML の起動ロゴに切り替わる） -->
+  <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+    <item name="android:windowBackground">@android:color/white</item>
+    <item name="android:statusBarColor">#F4F4F4</item>
+    <item name="android:windowLightStatusBar">true</item>
+  </style>
+</resources>

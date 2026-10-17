@@ -1,0 +1,36 @@
+// SPOTTER の Android アプリ：中身は index.html をそのまま表示する WebView
+plugins { id "com.android.application" }
+
+android {
+  namespace "app.spotter"
+  compileSdk 34
+  defaultConfig {
+    applicationId "app.spotter"
+    minSdk 24
+    targetSdk 34
+    versionCode (System.getenv("VERSION_CODE") ?: "1") as int
+    versionName System.getenv("VERSION_NAME") ?: "1.0"
+  }
+  // 署名：GitHub の Secrets に鍵があればそれで、なければデバッグ用の鍵で
+  signingConfigs {
+    release {
+      def ks = System.getenv("KEYSTORE_FILE")
+      if (ks) {
+        storeFile file(ks)
+        storePassword System.getenv("KEYSTORE_PASSWORD")
+        keyAlias System.getenv("KEY_ALIAS")
+        keyPassword System.getenv("KEY_PASSWORD")
+      }
+    }
+  }
+  buildTypes {
+    release {
+      minifyEnabled false
+      signingConfig System.getenv("KEYSTORE_FILE") ? signingConfigs.release : signingConfigs.debug
+    }
+  }
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+}
