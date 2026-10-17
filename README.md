@@ -2,9 +2,10 @@
 
 チョコザップのマシンで組む、お腹まわりを引き締めるためのトレーニング記録アプリです（非公式）。
 
-- 毎日「筋トレ／有酸素／完全休息」をアプリが決める（筋トレは A→B→C の順番制、毎回全身＋腹筋＋有酸素）
+- 毎日「筋トレ／有酸素だけ／休み」をアプリが決める（週に筋トレ3日・有酸素だけ1〜2日・休み2日。筋トレは 上半身→下半身→全身 の順で、毎回腹筋＋有酸素つき）
 - 前回の重さ・回数から今日の目標を自動で出し、セットを終えると休憩タイマーが自動で始まる
-- 歩数、週1回の体重・ウエストを記録し、変化がなければ有酸素や食事の見直しを提案
+- 有酸素と毎日の早歩きは速さを指示し、時間は目安を見ながら自分で入れる
+- 週1回の体重を記録し、変化がなければ有酸素や食事の見直しを提案
 
 ## 使い方（iPhone）
 1. Safari でアプリのURLを開く
@@ -20,8 +21,9 @@
 - `icons/` … アイコン画像
 
 ## Android アプリ
-`main` に変更が入るたびに、GitHub が自動で Android アプリ（`SPOTTER.apk`）を作り、このリポジトリの「Releases」に置きます。
-Android のスマホで `SPOTTER.apk` をダウンロードして開くと入れられます（「提供元不明のアプリ」を許可する画面が出たら許可）。
+Android のスマホで https://seiji36723-oss.github.io/spotter/SPOTTER.apk を開いてダウンロードし、開くと入れられます（「提供元不明のアプリ」を許可する画面が出たら許可）。
 
+- `SPOTTER.apk` … Android アプリ本体（`index.html` を変えたら作り直す）
 - `android/` … Android アプリのしくみ（`index.html` を全画面で表示するだけ）
-- `setup/android.yml` … APK を自動で作る手順。GitHub の画面で `.github/workflows/android.yml` に移すと動き出します
+- `android/build-apk.sh` … Gradle を使わずに `SPOTTER.apk` を作る手順（署名の鍵が必要）
+- `setup/android.yml` … GitHub に APK を自動で作らせる手順（使う場合は `.github/workflows/android.yml` に移し、署名の鍵を Secrets に登録）
