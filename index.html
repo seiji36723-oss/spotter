@@ -4,7 +4,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="SPOTTER">
-<meta name="description" content="チョコザップのマシンで組む全身トレーニングの記録アプリ（非公式）">
+<meta name="description" content="チョコザップのマシンで組む、お腹まわりを引き締めるトレーニングの記録アプリ（非公式）">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icons/favicon-64.png">
@@ -118,6 +118,54 @@ button { cursor: pointer; }
 @keyframes sp-dot { 0% { transform: scale(0); } 70% { transform: scale(1.5); } 100% { transform: scale(1); } }
 @keyframes sp-letter { 0% { transform: translateY(14px) scale(.6); opacity: 0; } 100% { transform: none; opacity: 1; } }
 @keyframes sp-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── 休憩タイマーの追加分・日の種類・歩数・体重とウエスト・アドバイス ── */
+.timer-ask { display: flex; align-items: center; gap: 8px; padding-block: 0 10px; font-size: 12px; font-weight: 700; }
+.timer-ask span { flex: 1; min-width: 0; }
+.timer.late { background: var(--h3); color: #fff; }
+.timer.late .timer-btn.strong { background: #fff; color: var(--h3); border-color: #fff; }
+.rest-tag { margin-left: 8px; font-weight: 700; color: var(--faint); }
+.dh-title b.key.t-cardio { background: var(--h3); }
+.dh-title b.key.t-rest { background: var(--ok); }
+.dh-title b.key.t-off { background: var(--muted); }
+.dh-check .mini { margin-left: auto; }
+.cpick { display: flex; flex-wrap: wrap; gap: 6px; }
+.how { margin: 0; font-size: 13px; font-weight: 700; color: var(--muted); }
+.now.cardio { border-color: var(--h3); }
+.nudge { margin: 0; padding: 9px 12px; border-radius: 10px; background: var(--h1); color: #7a0f09; font-size: 13px; font-weight: 700; text-align: left; border: 0; width: 100%; }
+.adv { margin: 0; padding: 9px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; border-left: 4px solid var(--h3); background: var(--surface); }
+.adv.good { border-left-color: var(--ok); }
+.advs { display: flex; flex-direction: column; gap: 6px; }
+.done-today, .rest-day { display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+.done-today b, .rest-day b { font-size: 17px; }
+.done-today > span, .rest-day > span { font-size: 13px; color: var(--muted); font-weight: 700; }
+.rest-day { border-left: 5px solid var(--ok); }
+.steps { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow); }
+.st-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.st-head span { font-size: 11.5px; color: var(--muted); }
+.st-row { display: flex; align-items: baseline; gap: 6px; font-weight: 700; }
+.st-in { width: 7em; border: 0; border-bottom: 2px solid var(--ink); background: transparent; font-family: var(--font-num); font-weight: 700; font-size: 28px; padding: 0 2px; }
+.st-left { margin-left: auto; font-size: 13px; color: var(--h3); }
+.st-left.ok { color: var(--ok); }
+.st-bar { position: relative; height: 8px; border-radius: 4px; background: var(--surface-2); }
+.st-bar i { display: block; height: 100%; border-radius: 4px; background: var(--ok); }
+.st-bar em { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
+.bodyrec { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow); scroll-margin-top: 12px; }
+.bd-in { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bd-in label { display: flex; align-items: baseline; gap: 3px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.bd-in input { width: 5.4em; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); padding: 6px 8px; font-family: var(--font-num); font-weight: 700; font-size: 18px; color: var(--ink); }
+.bd-in .btn { margin-left: auto; }
+.bd-list { list-style: none; margin: 0; padding: 0; }
+.bd-list li { display: grid; grid-template-columns: 6.5em 1fr 1fr; gap: 6px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+.bd-list li:first-child { border-top: 0; }
+.bd-list b { font-family: var(--font-num); font-size: 18px; color: var(--ink); margin-right: 1px; }
+.bd-list em { font-style: normal; font-family: var(--font-num); font-weight: 700; margin-left: 4px; }
+.bd-list em.down { color: var(--ok); }
+.bd-list em.up { color: var(--h3); }
+.wsum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.wsum span { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); font-weight: 700; font-size: 12px; color: var(--muted); }
+.wsum b { font-family: var(--font-num); font-size: 24px; color: var(--ink); line-height: 1.1; }
+.wsum small { font-size: 11px; }
 
 /* ── いちばん上の種目アイコン（スクロールしても上に残る） ── */
 .jump {
@@ -775,6 +823,17 @@ button { cursor: pointer; }
   <section id="view-settings" class="view" hidden></section>
 </main>
 
+<div id="timer" class="timer" hidden>
+  <i id="timerBar" class="timer-bar"></i>
+  <div class="wrap timer-in">
+    <span class="timer-txt"><span class="timer-label">休憩</span><span id="timerNext" class="timer-next"></span></span>
+    <span id="timerTime" class="timer-time">0:00</span>
+    <button type="button" class="timer-btn" data-act="timer-add">＋30秒</button>
+    <button type="button" class="timer-btn strong" data-act="timer-skip">終了</button>
+  </div>
+  <div id="timerAsk" class="wrap timer-ask" hidden><span>目標回数に届きませんでした。次からこの種目の休憩を30秒のばす？</span><button type="button" class="timer-btn strong" data-act="timer-extend">のばす</button></div>
+</div>
+
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
 <nav class="tabs" aria-label="画面の切り替え">
@@ -1082,12 +1141,22 @@ button { cursor: pointer; }
       tips: ["仰向けで膝を立てる", "お尻を締めて、肩から膝まで一直線に上げる", "上で1秒止める"] },
     { id: "knee_pushup", name: "膝つき腕立て伏せ", part: "chest", equip: null, bw: true,
       tips: ["手は肩幅より少し広め", "頭から膝まで一直線のまま", "胸を床に近づけるところまで下ろす"] },
+    // 腹筋（毎回1種目・3セット）
+    { id: "plank", name: "プランク", part: "abs", equip: null, bw: true, unit: "sec",
+      tips: ["肘は肩の真下", "頭からかかとまで一直線", "お尻を上げすぎない・落とさない"] },
+    { id: "ab_leg_raise", name: "レッグレイズ（アブベンチ）", part: "abs", equip: "ab_bench", bw: true, icon: "ab_bench",
+      tips: ["ベンチに仰向けになり、頭の横のバーをつかむ", "脚をそろえて、お尻が少し浮くまで上げる", "下ろすときはゆっくり。床につけない（ハンギングレッグレイズの代わり）"] },
+    { id: "ab_crunch", name: "アブドミナルトレーナー", part: "abs", equip: "ab_trainer", start: 10, icon: "ab_trainer",
+      tips: ["おへそをのぞき込むように背中を丸める", "腕の力で引かない", "息を吐きながら縮める（アブローラー・ケーブルクランチの代わり）"] },
+    // 有酸素
+    { id: "treadmill", name: "トレッドミル（傾斜で早歩き）", part: "cardio", equip: "treadmill", unit: "min",
+      tips: ["傾斜5〜10%で早歩き", "手すりにつかまらない", "会話がぎりぎりできるくらいの速さ"] },
+    { id: "bike", name: "バイク", part: "cardio", equip: "bike", unit: "min",
+      tips: ["ペダルが一番下のとき膝が軽く曲がるサドルの高さに", "会話がぎりぎりできるくらいの重さ・回転で"] },
+    { id: "home_walk", name: "自宅のまわりで早歩き", part: "cardio", equip: null, unit: "min", icon: "treadmill",
+      tips: ["少し息が上がるくらいの速さで", "腕を大きく振る", "続けて30分が無理なら10分×3回でもOK"] },
     // 記録を表示するためだけの種目（メニューには出ない）
-    { id: "ab_crunch", name: "アブドミナルトレーナー", part: "abs", equip: "ab_trainer", start: 10, old: true, icon: "ab_trainer", tips: [] },
     { id: "ab_bench", name: "アブベンチ（腹筋）", part: "abs", equip: null, bw: true, old: true, tips: [] },
-    { id: "plank", name: "プランク", part: "abs", equip: null, bw: true, unit: "sec", old: true, tips: [] },
-    { id: "bike", name: "バイク", part: "cardio", equip: null, unit: "min", old: true, tips: [] },
-    { id: "treadmill", name: "トレッドミル", part: "cardio", equip: null, unit: "min", old: true, tips: [] },
     { id: "squat", name: "スクワット", part: "legs", equip: "barbell", step: 2.5, old: true, tips: [] },
     { id: "bench", name: "ベンチプレス", part: "chest", equip: "barbell", step: 2.5, old: true, tips: [] },
     { id: "side_raise", name: "サイドレイズ", part: "shoulder", equip: "dumbbell", step: 1, acc: true, old: true, tips: [] },
@@ -1106,58 +1175,71 @@ button { cursor: pointer; }
     e.step = e.step || 5;
     e.icon = e.icon || e.id;
     e.no = e.equip ? MACHINE_NO[e.equip] || "" : "";
-    e.range = e.bw ? [5, 20] : e.acc ? [10, 15] : [8, 12];
+    e.range = e.unit === "sec" ? [20, 60] : e.part === "abs" ? [10, 20] : e.bw ? [5, 20] : e.acc ? [10, 15] : [8, 12];
+    // 休憩の長さの区分：多関節（multi）／単関節（single）／腹筋（abs）／有酸素
+    e.kind = e.part === "cardio" ? "cardio" : e.part === "abs" ? "abs" : e.acc ? "single" : "multi";
   });
   const EX = Object.fromEntries(EXERCISES.map((e) => [e.id, e]));
   const weighted = (ex) => !ex.bw && ex.unit === "reps";
 
-  // ── メニュー（A→B→C→Aの順に回す。毎回、脚・押す・引く・補助で全身） ──
+  // ── メニュー（筋トレの日に A→B→C→A の順で回す。脚・押す・引く＋腹筋で全身） ──
   // もとの指示の種目を、チョコザップのマシンで置きかえたもの（カッコ内がもとの種目）
-  //   A：レッグプレス（スクワット）／チェストプレス（ベンチプレス）／ラットプルダウン／ショルダープレス軽め（サイドレイズ）
-  //   B：レッグプレス足を高め（ルーマニアンデッドリフト）／ショルダープレス／ラットプルダウン手幅せまく（ロウ）／バイセップスカール（アームカール）
-  //   C：レッグプレス／チェストプレスのシート低め（インクラインプレス）／ラットプルダウン逆手（懸垂）／ディップス（トライセプス）
+  //   A：レッグプレス（スクワット）／チェストプレス（ベンチプレス）／ラットプルダウン／プランク
+  //   B：レッグプレス足を高め（ルーマニアンデッドリフト）／ショルダープレス／ラットプルダウン手幅せまく（ロウ）／レッグレイズ（ハンギングレッグレイズ）
+  //   C：レッグプレス／チェストプレスのシート低め（インクラインプレス）／ラットプルダウン逆手（懸垂）／アブドミナルトレーナー（アブローラー・ケーブルクランチ）
   // 各枠の種目は前から順に、使えるマシンでできるものを選ぶ
   const MENUS = {
     A: [
       { part: "legs", ex: ["leg_press", "bw_squat", "adductor"] },
       { part: "chest", ex: ["chest_press", "chest_press_low", "knee_pushup"] },
       { part: "back", ex: ["lat_pull", "lat_pull_narrow", "lat_pull_under"] },
-      { part: "shoulder", acc: true, ex: ["shoulder_press_light", "shoulder_press"] },
+      { part: "abs", ex: ["plank", "ab_crunch", "ab_leg_raise"] },
     ],
     B: [
       { part: "legs", ex: ["leg_press_high", "abductor", "glute_bridge"] },
       { part: "shoulder", ex: ["shoulder_press", "shoulder_press_light"] },
       { part: "back", ex: ["lat_pull_narrow", "lat_pull", "lat_pull_under"] },
-      { part: "arms", acc: true, ex: ["biceps_curl"] },
+      { part: "abs", ex: ["ab_leg_raise", "ab_crunch", "plank"] },
     ],
     C: [
       { part: "legs", ex: ["leg_press", "bw_squat", "adductor"] },
       { part: "chest", ex: ["chest_press_low", "chest_press", "knee_pushup"] },
       { part: "back", ex: ["lat_pull_under", "lat_pull", "lat_pull_narrow"] },
-      { part: "arms", acc: true, ex: ["dips"] },
+      { part: "abs", ex: ["ab_crunch", "ab_leg_raise", "plank"] },
     ],
   };
   const KEYS = ["A", "B", "C"];
+  const CARDIO_EX = ["treadmill", "bike"]; // 有酸素に使うマシン（前から順に）
 
-  // 今日の内容：通常／週1回の週／連続日／疲れ・筋肉痛
+  // 筋トレの日の内容（セット数）
   const MODES = {
     normal: { name: "通常", sets: 3 },
+    long: { name: "4日以上あいた", sets: 4 },
     once: { name: "週1回の週", sets: 4 },
-    consec: { name: "連続日", sets: 2 },
-    tired: { name: "疲れ・筋肉痛", sets: 2 },
+    consec: { name: "連続2日目", sets: 2 },
   };
-  const MINUTES = [30, 45, 60, 75, 90];
-  const MIN_PER_SET = 3.75; // 1セット＋休憩のだいたいの時間（分）。最初の準備で5分 → 12セットで約50分
-  const BONUS_MAX = 3; // 先週足りなかった部位に足すセットは1日3セットまで（60分くらいに収める）
+  // 今日の種類
+  const DAY_TYPES = { strength: "筋トレ", cardio: "有酸素", rest: "完全休息", off: "行けない日" };
+  const MINUTES = [45, 60, 75, 90];
+  const REST_SEC = { multi: 150, single: 75, abs: 75 }; // 休憩：多関節2分30秒、腹筋・単関節1分15秒
+  const MIN_PER = { multi: 1 + REST_SEC.multi / 60, single: 1 + REST_SEC.single / 60, abs: 0.75 + REST_SEC.abs / 60 }; // 1セット＋休憩の分
+  const CARDIO_AFTER = [15, 20]; // 筋トレ後の有酸素（分）
+  const CARDIO_DAY = [30, 45]; // 有酸素の日（分）
+  const STEP_GOAL = [7000, 10000]; // 1日の歩数の目標
 
   // ── 状態 ──
-  const SETTINGS_VER = 4; // 4: 全身法（A→B→C）をチョコザップの12台で
+  const SETTINGS_VER = 4; // 4: チョコザップの12台（器具の設定はそのまま使う）
   const defaultSettings = () => ({ v: SETTINGS_VER, minutes: 60, equip: Object.fromEntries(EQUIP.map((q) => [q.id, true])) });
   const savedSettings = load(LS.settings, {});
   const settings = savedSettings.v === SETTINGS_VER ? Object.assign(defaultSettings(), savedSettings) : defaultSettings();
   settings.equip = Object.fromEntries(EQUIP.map((q) => [q.id, settings.equip[q.id] !== false]));
+  if (!MINUTES.includes(settings.minutes)) settings.minutes = 60;
+  Object.assign(LS, { off: "cz_off", steps: "cz_steps", body: "cz_body", nudge: "cz_nudge" });
   let logs = load(LS.logs, []);
   let cur = load(LS.current, null);
+  let offDays = load(LS.off, {}); // 「今日は行けない」と入力した日
+  let steps = load(LS.steps, {}); // 日付ごとの歩数
+  let body = load(LS.body, []); // 体重・ウエスト（週1回）
   try { localStorage.removeItem(LS.week); } catch (e) { /* 前の版の週メニューはもう使わない */ }
   let tab = "menu";
   let pendingRegen = null; // 記録中にメニューを作り直そうとした時の確認
@@ -1166,10 +1248,14 @@ button { cursor: pointer; }
   let condOpen = false; // 時間・器具を開いているか
   let logPeriod = "week"; // 記録のまとめ：week（今週）／month（今月）
   let xfer = null; // 記録の引っ越し：export（書き出し）／import（読み込み）
+  let showAgain = false; // 今日の分を記録したあとも、もう一度メニューを出す
 
   const saveSettings = () => save(LS.settings, settings);
   const saveLogs = () => save(LS.logs, logs);
   const saveCur = () => save(LS.current, cur);
+  const saveOff = () => save(LS.off, offDays);
+  const saveSteps = () => save(LS.steps, steps);
+  const saveBody = () => save(LS.body, body);
   saveSettings();
 
   // ── 日付 ──
@@ -1188,8 +1274,14 @@ button { cursor: pointer; }
   }
   const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
   const todayIso = () => formatDateISO(new Date());
+  const isoAdd = (iso, n) => formatDateISO(addDays(isoToDate(iso), n));
 
   // ── 記録から読む ──
+  // 記録の種類：strength（筋トレ）／cardio（有酸素の日）／home（行けない日の自宅運動）
+  const sessionType = (s) => s.type || (s.items.some((it) => EX[it.exId] && EX[it.exId].part !== "cardio") ? "strength" : "cardio");
+  const typesOn = (iso) => new Set(logs.filter((s) => s.date === iso).map(sessionType));
+  const strengthOn = (iso) => typesOn(iso).has("strength");
+  const activeOn = (iso) => { const t = typesOn(iso); return t.has("strength") || t.has("cardio"); }; // ジムに行った日（稼働日）
   // 部位ごとのセット数（from〜to の日付）
   function partSets(fromIso, toIso) {
     const out = Object.fromEntries(PART_IDS.map((p) => [p, 0]));
@@ -1199,11 +1291,11 @@ button { cursor: pointer; }
     });
     return out;
   }
-  // 次にやるメニュー：最後にやったメニュー（疲れた日の補助だけは数えない）の次
+  // 次にやるメニュー：最後にやった筋トレのメニューの次
   function lastFull(beforeIso) {
     for (let i = logs.length - 1; i >= 0; i--) {
       const s = logs[i];
-      if (s.v === 3 && s.date < beforeIso && KEYS.includes(s.day) && !s.light) return s; // 前の版（A/Bの分割法）の記録は順番に数えない
+      if (s.v >= 3 && s.date < beforeIso && KEYS.includes(s.day) && !s.light && sessionType(s) === "strength") return s; // 前の版（A/Bの分割法）の記録は数えない
     }
     return null;
   }
@@ -1211,20 +1303,37 @@ button { cursor: pointer; }
     const last = lastFull("9999-12-31");
     return last ? KEYS[(KEYS.indexOf(last.day) + 1) % 3] : "A";
   }
-  // 前回トレーニングした日（今日より前）
-  function lastDay() {
-    for (let i = logs.length - 1; i >= 0; i--) if (logs[i].date < todayIso()) return logs[i].date;
+  // 前回の筋トレの日（その日より前）
+  function lastStrengthDay(beforeIso) {
+    for (let i = logs.length - 1; i >= 0; i--) if (logs[i].date < beforeIso && sessionType(logs[i]) === "strength") return logs[i].date;
     return null;
   }
-  // 今日の内容を自動で決める（前回から1日→連続日、6〜13日あいた→週1回の週、14日以上→軽くして通常）
-  function autoMode() {
-    const d = lastDay();
-    if (!d) return { mode: "normal", why: "はじめての日" };
-    const gap = daysBetween(d, todayIso());
-    if (gap === 1) return { mode: "consec", why: "昨日もやったので連続日" };
-    if (gap >= 14) return { mode: "normal", why: `${gap}日ぶりなので、重さを軽くして通常の3セットから` };
-    if (gap >= 6) return { mode: "once", why: `前回から${gap}日あいたので週1回の週` };
-    return { mode: "normal", why: `前回から${gap}日` };
+  function lastDay() { return lastStrengthDay(todayIso()); }
+  // 筋トレの日のセット数：連続2日目→2、4日以上あいた→4、6〜13日（週1回）→4、14日以上→軽くして3
+  function strengthMode(iso) {
+    const ls = lastStrengthDay(iso);
+    if (!ls) return { mode: "normal", why: "はじめての筋トレ" };
+    const gap = daysBetween(ls, iso);
+    if (gap <= 1) return { mode: "consec", why: "昨日も筋トレ。連続2日目なので各2セット" };
+    if (gap >= 14) return { mode: "normal", why: `${gap}日ぶり。重さを軽くして3セットから` };
+    if (gap >= 6) return { mode: "once", why: `前回の筋トレから${gap}日。週1回の週なので各4セット` };
+    if (gap >= 4) return { mode: "long", why: `前回の筋トレから${gap}日。各4セット` };
+    return { mode: "normal", why: `前回の筋トレから${gap}日（48時間以上）` };
+  }
+  // その日の種類を決める
+  //   行けないと入力 → 行けない日 ／ 直近7日で稼働5日 → 完全休息 ／ 筋トレが2日続いた翌日 → 有酸素 ／ それ以外 → 筋トレ
+  function planFor(iso) {
+    if (offDays[iso]) return { type: "off", why: "今日は行けない日。自宅で歩きましょう" };
+    const active6 = [1, 2, 3, 4, 5, 6].filter((k) => activeOn(isoAdd(iso, -k))).length;
+    if (active6 >= 5) return { type: "rest", why: "直近7日で5日動いたので完全休息日" };
+    if (strengthOn(isoAdd(iso, -1)) && strengthOn(isoAdd(iso, -2))) return { type: "cardio", why: "筋トレが2日続いたので有酸素の日" };
+    return { type: "strength", ...strengthMode(iso) };
+  }
+  // インターバルにしてよいか：直近7日でまだしていない、かつ明日が筋トレの日ではない
+  function intervalOK(iso) {
+    if (logs.some((s) => s.interval && s.date > isoAdd(iso, -7) && s.date <= iso)) return false;
+    const activeTomorrow6 = 1 + [1, 2, 3, 4, 5].filter((k) => activeOn(isoAdd(iso, -k))).length; // 今日の有酸素も数える
+    return activeTomorrow6 >= 5; // 明日が完全休息日になる時だけ
   }
   // その種目の記録（新しい順）
   function perfHistory(exId, n) {
@@ -1238,45 +1347,46 @@ button { cursor: pointer; }
   const doneOn = (iso) => new Set(logs.filter((s) => s.date === iso).flatMap((s) => s.items.map((it) => it.exId)));
   const usable = (ex) => !ex.equip || !!settings.equip[ex.equip];
   // 前の版の作りかけメニューや、今はもう使わない種目・使えないマシンが入ったメニューは作り直す
-  const staleCur = (c) => !c || c.ver !== 4 || c.items.some((it) => !EX[it.exId] || EX[it.exId].old || !usable(EX[it.exId]));
+  const staleCur = (c) => !c || c.ver !== 5 || c.items.some((it) => !EX[it.exId] || EX[it.exId].old || !usable(EX[it.exId]));
   if (staleCur(cur)) cur = null;
 
   // ── 前回を少しでも上回る目標 ──
-  // 前回の全セットが目標回数の上限に届いた → 1段階重く。届かなかった → 同じ重さで合計1回でも多く
+  // 前回の全セットが目標回数の上限に届いた → 1段階重く。届かなかった → 同じ重さで合計1回（プランクは5秒）でも多く
   function target(ex, nSets) {
     const [lo, hi] = ex.range;
     const step = ex.step || 1;
+    const u = ex.unit === "sec" ? "秒" : "回";
+    const inc = ex.unit === "sec" ? 5 : 1;
     const snap = (w) => Math.max(step, Math.floor(w / step + 1e-9) * step);
     const h = perfHistory(ex.id, 1)[0];
     const mk = (w, reps, text, up = false) => ({ w, reps: Array.from({ length: nSets }, (_, j) => reps[Math.min(j, reps.length - 1)]), text, up });
     if (!h) {
-      const r0 = ex.acc ? 12 : 10;
+      const r0 = ex.unit === "sec" ? 30 : ex.part === "abs" ? 12 : ex.acc ? 12 : 10;
       return weighted(ex)
-        ? mk(ex.start, [r0], `初めて：<b>${fmtKg(ex.start)}kg</b> × ${r0}回 から。重すぎ・軽すぎなら変えてOK`)
-        : mk(null, [ex.id === "pullup" ? 5 : 10], "初めて：できる回数で。フォームを優先");
+        ? mk(ex.start, [r0], `初めて：<b>${fmtKg(ex.start)}kg</b> × ${r0}${u} から`)
+        : mk(null, [ex.unit === "sec" ? 30 : 10], "初めて：できる範囲で。フォームを優先");
     }
     const last = h.it.sets;
     const lastR = last.map((x) => x.r || 0);
     const lastW = weighted(ex) ? Math.max(...last.map((x) => x.w || 0)) || null : null;
-    // 久しぶりかどうかは、どの種目でもトレーニング自体から何日あいたか（順番制なので種目ごとの間隔は長くなりやすい）
     const ld = lastDay();
     const gap = ld ? daysBetween(ld, todayIso()) : 0;
-    const repStr = lastR.join("・") + "回";
+    const repStr = lastR.join("・") + u;
     const wStr = lastW != null ? `${fmtKg(lastW)}kg × ` : "";
     if (gap >= 14) {
       const w = lastW != null ? Math.max(step, Math.min(snap(lastW * 0.85), lastW - step)) : null;
-      return mk(w, [lo + 2], `${gap}日ぶり：前回 ${wStr}${repStr} → ${w != null ? `<b>${fmtKg(w)}kg</b> に軽くして` : "回数少なめで"}体を慣らす`);
+      return mk(w, [ex.unit === "sec" ? Math.max(20, Math.min(...lastR)) : lo + 2], `${gap}日ぶり：前回 ${wStr}${repStr} → ${w != null ? `<b>${fmtKg(w)}kg</b> に軽くして` : "少なめで"}体を慣らす`);
     }
     if (lastW != null && last.length >= Math.min(nSets, 3) && lastR.every((r) => r >= hi)) {
       const w = lastW + step;
-      return mk(w, [lo], `前回 ${wStr}${repStr} 全部${hi}回 → <b>${fmtKg(w)}kg</b> に上げて${lo}回以上`, true);
+      return mk(w, [lo], `前回 ${wStr}${repStr} 全部${hi}${u} → <b>${fmtKg(w)}kg</b> に上げて${lo}${u}以上`, true);
     }
-    // 同じ重さで、いちばん少なかったセットを1回増やす
+    // 同じ重さで、いちばん少なかったセットを少し増やす
     const reps = Array.from({ length: nSets }, (_, j) => Math.min(hi, lastR[Math.min(j, lastR.length - 1)]));
     const k = reps.indexOf(Math.min(...reps));
-    if (reps[k] < hi || !weighted(ex)) reps[k] += 1;
+    if (reps[k] < hi || !weighted(ex)) reps[k] += inc;
     const total = reps.reduce((a, r) => a + r, 0);
-    return mk(lastW, reps, `前回 ${wStr}${repStr} → 今日は${lastW != null ? "同じ重さで" : ""}<b>合計${total}回</b>以上が目標`);
+    return mk(lastW, reps, `前回 ${wStr}${repStr} → 今日は<b>合計${total}${u}</b>以上`);
   }
 
   // ── 今日のメニューを作る ──
@@ -1291,87 +1401,64 @@ button { cursor: pointer; }
       exId: ex.id, part, role, optional: !!optional,
       rx: { unit: ex.unit, lo: ex.range[0], hi: ex.range[1] },
       sug: { text: t.text, up: t.up },
-      sets: t.reps.map((r) => ({ w: t.w, r, done: false })),
+      sets: t.reps.map((r) => ({ w: t.w, r, t: r, done: false })), // t：そのセットの目標回数
     };
   }
-  function makeCur(key, modeOverride) {
+  function cardioItem(minutes, role, optional) {
+    const ex = CARDIO_EX.map((id) => EX[id]).find(usable) || EX.home_walk;
+    return { exId: ex.id, part: "cardio", role, optional: !!optional, rx: { unit: "min" }, sets: [{ m: minutes, done: false }] };
+  }
+  // 筋トレの時間の見積もり（分）：準備5分＋（1セット＋休憩）×セット数
+  const strengthMinutes = (items) => 5 + items.filter((it) => it.part !== "cardio").reduce((a, it) => a + it.sets.length * (MIN_PER[EX[it.exId].kind] || 3), 0);
+  function makeCur(override) {
     const today = todayIso();
-    const am = autoMode();
-    const mode = modeOverride || am.mode;
-    const base = MODES[mode].sets;
-    const avoid = mode === "consec" ? doneOn(lastDay()) : new Set(); // 同じ種目を2日連続にしない
-    const taken = new Set();
+    const auto = planFor(today);
+    const type = override || auto.type;
     const notes = [];
     let items = [];
-    const slots = mode === "tired"
-      ? KEYS.map((k) => MENUS[k].find((s) => s.acc)) // 疲れた日は補助種目だけ（3つ）
-      : MENUS[key];
-    slots.forEach((slot) => {
-      const ex = pickFor(slot, avoid, taken);
-      if (!ex) { notes.push(`${PARTS[slot.part]}：使える器具の種目がないので省略`); return; }
-      taken.add(ex.id);
-      const role = slot.acc ? "acc" : "main";
-      items.push(makeItem(ex, slot.part, role, base, mode === "once" && slot.acc));
-    });
-
-    // 先週足りなかった部位：今週の最初の日に1〜2セット追加
-    if (mode !== "tired") {
-      const mon = mondayOf(new Date());
-      const thisWeekBefore = logs.some((s) => s.date >= formatDateISO(mon) && s.date < today);
-      const prevFrom = formatDateISO(addDays(mon, -7));
-      const prevTo = formatDateISO(addDays(mon, -1));
-      const hadPrev = logs.some((s) => s.date >= prevFrom && s.date <= prevTo);
-      if (!thisWeekBefore && hadPrev) {
-        const prev = partSets(prevFrom, prevTo);
-        let budget = BONUS_MAX;
-        // 足りなかった数が多い部位から
-        PART_IDS.slice().sort((a, b) => prev[a] - prev[b]).forEach((p) => {
-          if (prev[p] >= WEEK_TARGET[0] || budget <= 0) return;
-          const add = Math.min(budget, WEEK_TARGET[0] - prev[p] >= 3 ? 2 : 1);
-          budget -= add;
-          let it = items.find((x) => x.part === p && x.role !== "extra");
-          if (it) {
-            const n = Math.min(5, it.sets.length + add);
-            const ex = EX[it.exId];
-            it.sets = makeItem(ex, p, it.role, n, it.optional).sets;
-          } else {
-            // 今日のメニューにない部位は、ほかのメニューの同じ部位の種目を足す
-            const slot = KEYS.flatMap((k) => MENUS[k]).find((s) => s.part === p && pickFor(s, avoid, taken));
-            if (!slot) return;
-            const ex = pickFor(slot, avoid, taken);
-            taken.add(ex.id);
-            items.push(makeItem(ex, p, "extra", add));
-          }
-          notes.push(`先週の${PARTS[p]}は${prev[p]}セット → 今日+${add}セット`);
-        });
+    let key = null;
+    let mode = null;
+    let why = override ? `手で「${DAY_TYPES[type]}」に変更中` : auto.why;
+    if (type === "strength") {
+      const sm = strengthMode(today);
+      mode = sm.mode;
+      if (override) why = sm.why;
+      key = nextKey();
+      const base = MODES[mode].sets;
+      const avoid = mode === "consec" ? doneOn(isoAdd(today, -1)) : new Set(); // 同じ種目を2日連続にしない
+      const taken = new Set();
+      MENUS[key].forEach((slot) => {
+        const ex = pickFor(slot, avoid, taken);
+        if (!ex) { notes.push(`${PART_NAMES[slot.part]}：使える器具の種目がないので省略`); return; }
+        taken.add(ex.id);
+        items.push(makeItem(ex, slot.part, slot.part === "abs" ? "abs" : "main", base));
+      });
+      // 筋トレ後の有酸素。時間が足りない日は休憩ではなく、有酸素→腹筋の順に削る
+      const limit = settings.minutes + 5;
+      let cardio = Math.min(CARDIO_AFTER[1], Math.floor((limit - strengthMinutes(items)) / 5) * 5);
+      if (cardio < 10) {
+        notes.push(`${settings.minutes}分に収めるため、筋トレ後の有酸素は省略`);
+        cardio = 0;
+        const abs = items.find((it) => it.role === "abs");
+        while (abs && abs.sets.length > 1 && strengthMinutes(items) > limit) abs.sets.pop();
+        if (abs && strengthMinutes(items) > limit) { items = items.filter((it) => it !== abs); notes.push("腹筋も省略"); }
+        else if (abs && abs.sets.length < base) notes.push(`腹筋は${abs.sets.length}セットに`);
       }
+      if (cardio) items.push(cardioItem(cardio, "cardio", mode === "once"));
+    } else if (type === "cardio") {
+      const m = Math.max(CARDIO_DAY[0], Math.min(CARDIO_DAY[1], Math.floor((settings.minutes - 5) / 5) * 5));
+      items.push(cardioItem(m, "cardio-day"));
+    } else if (type === "off") {
+      items.push({ exId: "home_walk", part: "cardio", role: "home", rx: { unit: "min" }, sets: [{ m: 30, done: false }] });
     }
-
-    // 時間が足りない日は補助種目から削る（それでも足りなければメインのセットを減らす。最低2セット）
-    const est = () => Math.round(5 + items.reduce((a, it) => a + it.sets.length, 0) * MIN_PER_SET);
-    const limit = settings.minutes + 5; // 「約」なので5分まではそのまま
-    if (est() > limit && mode !== "tired") {
-      const cut = items.filter((it) => it.role === "acc" || it.role === "extra");
-      for (const it of cut) {
-        if (est() <= limit) break;
-        items = items.filter((x) => x !== it);
-        notes.push(`${settings.minutes}分に収めるため ${EX[it.exId].name} を省略`);
-      }
-      let guard = 50;
-      while (est() > limit && guard-- > 0) {
-        const big = items.filter((it) => it.sets.length > 2).sort((a, b) => b.sets.length - a.sets.length)[0];
-        if (!big) break;
-        big.sets.pop();
-        if (!notes.some((n) => n.startsWith("時間に合わせて"))) notes.push("時間に合わせてセット数を減らしています");
-      }
-    }
-    return { ver: 4, createdAt: Date.now(), startedAt: null, day: key, mode, modeAuto: am, modeOverride: modeOverride || null, items, notes };
+    return { ver: 5, date: today, createdAt: Date.now(), startedAt: null, type, override: override || null, why, day: key, mode, items, notes, intervalOK: type === "cardio" && intervalOK(today), interval: false };
   }
 
   const anyDone = () => !!cur && cur.items.some((it) => it.sets.some((x) => x.done));
   const itemDone = (it) => it.sets.length > 0 && it.sets.every((x) => x.done);
-  const curSets = () => cur.items.reduce((a, it) => a + it.sets.length, 0);
-  const menuMinutes = () => Math.round(5 + curSets() * MIN_PER_SET);
+  const curSets = () => cur.items.reduce((a, it) => a + (it.part === "cardio" ? 0 : it.sets.length), 0);
+  const cardioMin = () => cur.items.filter((it) => it.part === "cardio").reduce((a, it) => a + it.sets[0].m, 0);
+  const menuMinutes = () => Math.round((cur.type === "strength" ? strengthMinutes(cur.items) : 0) + cardioMin());
 
   // ── 記録して終える ──
   function sessionOf(c, endedAt) {
@@ -1381,28 +1468,31 @@ button { cursor: pointer; }
       sets: it.sets.filter((x) => x.done).map((x) => (it.rx.unit === "min" ? { m: x.m } : { w: x.w, r: x.r })),
     })).filter((it) => it.sets.length);
     const startedAt = c.startedAt || c.createdAt;
-    return { v: 3, id: "s" + endedAt.toString(36), date: formatDateISO(new Date(startedAt)), day: c.day, light: c.mode === "tired", startedAt, endedAt, items };
+    const type = c.type === "off" ? "home" : c.type === "strength" ? "strength" : "cardio";
+    return { v: 5, id: "s" + endedAt.toString(36), date: formatDateISO(new Date(startedAt)), type, day: c.day, interval: !!c.interval, startedAt, endedAt, items };
   }
   // 今日のメニューを用意する。前の日に途中まで記録して終えていなければ、その日の分として保存
   function ensureToday() {
     const today = todayIso();
-    if (cur && formatDateISO(new Date(cur.startedAt || cur.createdAt)) !== today) {
+    if (cur && cur.date !== today) {
       if (anyDone()) {
         const started = cur.startedAt || cur.createdAt;
-        logs.push(sessionOf(cur, started + menuMinutes() * 60000));
+        logs.push(sessionOf(cur, started + Math.max(10, menuMinutes()) * 60000));
         saveLogs();
       }
       cur = null;
+      showAgain = false;
     }
-    if (!cur) { cur = makeCur(nextKey()); saveCur(); }
+    if (!cur) { cur = makeCur(null); saveCur(); }
   }
-  function rebuild(modeOverride) {
-    cur = makeCur(cur ? cur.day : nextKey(), modeOverride === undefined ? (cur && cur.modeOverride) : modeOverride);
+  function rebuild(override) {
+    cur = makeCur(override === undefined ? (cur && cur.override) : override);
     pendingRegen = null;
     saveCur();
   }
   function finishSession() {
-    if (!anyDone()) { toast("1セット以上チェックすると記録できます"); return; }
+    if (!anyDone()) { toast("1つ以上「完了」にすると記録できます"); return; }
+    stopRest();
     const session = sessionOf(cur, Date.now());
     logs.push(session);
     saveLogs();
@@ -1410,21 +1500,154 @@ button { cursor: pointer; }
     selDay = session.date;
     calMonth = null;
     cur = null;
-    ensureToday(); // 次のメニュー（A→B→C）を用意
+    showAgain = false;
+    ensureToday();
     switchTab("log");
   }
   // 別の種目に入れ替え（同じ部位の、使える種目を順番に）
   function swapItem(i) {
     const it = cur.items[i];
     const ex = EX[it.exId];
-    const pool = [...new Set(KEYS.flatMap((k) => MENUS[k]).filter((s) => s.part === it.part).flatMap((s) => s.ex))]
-      .map((id) => EX[id]).filter((e) => usable(e) && (e.id === ex.id || !cur.items.some((x) => x.exId === e.id)));
-    if (pool.length < 2) { toast(`ほかに入れ替えられる${PARTS[it.part]}の種目がありません`); return; }
+    const pool = it.part === "cardio" ? CARDIO_EX.map((id) => EX[id]).filter(usable)
+      : [...new Set(KEYS.flatMap((k) => MENUS[k]).filter((s) => s.part === it.part).flatMap((s) => s.ex))]
+        .map((id) => EX[id]).filter((e) => usable(e) && (e.id === ex.id || !cur.items.some((x) => x.exId === e.id)));
+    if (pool.length < 2) { toast(`ほかに入れ替えられる${PART_NAMES[it.part]}の種目がありません`); return; }
     const next = pool[(pool.findIndex((e) => e.id === ex.id) + 1) % pool.length];
-    cur.items[i] = makeItem(next, it.part, it.role, it.sets.length, it.optional);
+    cur.items[i] = it.part === "cardio" ? { ...it, exId: next.id } : makeItem(next, it.part, it.role, it.sets.length, it.optional);
     saveCur();
     renderMenu();
     toast(`${ex.name} → ${next.name}`);
+  }
+
+  // ── アドバイス（体重・ウエストと重さの変化から） ──
+  function advice() {
+    const out = [];
+    // 2〜3週間、体重もウエストも変わらない → 有酸素を週1回増やすか食事を見直す
+    const b = body.slice().sort((x, y) => (x.date < y.date ? -1 : 1));
+    if (b.length >= 2) {
+      const last = b[b.length - 1];
+      const past = b.filter((r) => daysBetween(r.date, last.date) >= 14 && daysBetween(r.date, last.date) <= 24).pop();
+      if (past) {
+        const dw = last.weight != null && past.weight != null ? last.weight - past.weight : null;
+        const dc = last.waist != null && past.waist != null ? last.waist - past.waist : null;
+        if ((dw == null || Math.abs(dw) < 0.3) && (dc == null || Math.abs(dc) < 0.5) && (dw != null || dc != null)) {
+          out.push({ kind: "warn", text: `${daysBetween(past.date, last.date)}日間、体重もウエストも変化なし → 有酸素を週1回増やすか、食事を見直しましょう` });
+        } else if (dc != null && dc <= -0.5) {
+          out.push({ kind: "good", text: `ウエスト ${fmtKg(dc)}cm（${daysBetween(past.date, last.date)}日前より）` });
+        }
+      }
+    }
+    // メイン種目の重さが落ちてきた → 有酸素を減らす
+    const drops = [];
+    EXERCISES.filter((e) => !e.old && weighted(e) && e.part !== "abs" && !e.acc).forEach((e) => {
+      const h = perfHistory(e.id, 4);
+      if (h.length < 3) return;
+      const best = (x) => Math.max(...x.it.sets.map((s) => s.w || 0));
+      const now = best(h[0]);
+      const before = Math.max(...h.slice(1).map(best));
+      if (now < before - 1e-6) drops.push(e.name);
+    });
+    if (drops.length >= 2) out.push({ kind: "warn", text: `重さが落ちてきています（${drops.slice(0, 3).join("・")}）→ 有酸素の量を減らしましょう` });
+    return out;
+  }
+
+  // ── 休憩タイマー（セットを完了すると自動で始まる。終わったら音・振動・通知） ──
+  const timer = { end: 0, total: 1, id: 0, beeped: false, nudged: false, i: -1 };
+  let audioCtx = null;
+  function unlockAudio() {
+    try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === "suspended") audioCtx.resume(); } catch (e) { audioCtx = null; }
+  }
+  function beep(n = 2) {
+    if (!audioCtx) return;
+    try {
+      for (let k = 0; k < n; k++) {
+        const t0 = audioCtx.currentTime + k * 0.25;
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.frequency.value = 880;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+        o.connect(g).connect(audioCtx.destination);
+        o.start(t0);
+        o.stop(t0 + 0.2);
+      }
+    } catch (e) { /* 鳴らせなくても続ける */ }
+  }
+  // 通知（許可されている時だけ）。アプリ版はサービスワーカー経由で出す
+  function notify(title, text) {
+    try {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then((r) => r.showNotification(title, { body: text, icon: "icons/icon-192.png", tag: "spotter" })).catch(() => {});
+      } else new Notification(title, { body: text, tag: "spotter" });
+    } catch (e) { /* 通知できなくても続ける */ }
+  }
+  function alarm(title, text) {
+    beep(3);
+    try { if (navigator.vibrate) navigator.vibrate([250, 120, 250]); } catch (e) { /* 対応していない端末 */ }
+    if (document.hidden) notify(title, text);
+  }
+  const fmtSec = (s) => `${Math.floor(s / 60)}:${pad(s % 60)}`;
+  // 休憩中に出す「次にやること」
+  function nextText() {
+    const k = cur ? cur.items.findIndex((x) => x.part !== "cardio" && !itemDone(x)) : -1;
+    if (k < 0) return cur && cur.items.some((x) => x.part === "cardio" && !itemDone(x)) ? "次：有酸素" : "";
+    const it = cur.items[k];
+    const s = it.sets.findIndex((x) => !x.done);
+    const st = it.sets[s];
+    return `次：${EX[it.exId].name} ${s + 1}セット目${st.w != null ? ` ${fmtKg(st.w)}kg` : ""} × ${st.r}${it.rx.unit === "sec" ? "秒" : "回"}`;
+  }
+  function startRest(i, j) {
+    const it = cur.items[i];
+    const ex = EX[it.exId];
+    const sec = (REST_SEC[ex.kind] || 90) + (it.restExtra || 0);
+    Object.assign(timer, { end: Date.now() + sec * 1000, total: sec, beeped: false, nudged: false, i });
+    const st = it.sets[j];
+    $("#timerAsk").hidden = !(st && st.t != null && st.r < st.t); // 目標に届かなかった → 次の休憩を30秒のばす提案
+    $(".timer-label").textContent = `休憩 ${fmtSec(sec)}`;
+    $("#timerNext").textContent = nextText();
+    const el = $("#timer");
+    el.hidden = false;
+    el.classList.remove("over", "late");
+    clearInterval(timer.id);
+    timer.id = setInterval(tickRest, 250);
+    tickRest();
+  }
+  function stopRest() {
+    clearInterval(timer.id);
+    const el = $("#timer");
+    if (el) { el.hidden = true; el.classList.remove("over", "late"); }
+  }
+  function tickRest() {
+    const left = Math.round((timer.end - Date.now()) / 1000);
+    const el = $("#timer");
+    $("#timerTime").textContent = (left < 0 ? "+" : "") + fmtSec(Math.abs(left));
+    $("#timerBar").style.width = `${Math.max(0, Math.min(100, (left / timer.total) * 100))}%`;
+    el.classList.toggle("over", left <= 0);
+    if (left <= 0 && !timer.beeped) {
+      timer.beeped = true;
+      $(".timer-label").textContent = "休憩終了";
+      alarm("休憩終了", nextText() || "次のセットを始めましょう");
+    }
+    // 5分以上あいたら再開を促す
+    if (left <= -300 && !timer.nudged) {
+      timer.nudged = true;
+      el.classList.add("late");
+      $(".timer-label").textContent = "5分たちました。再開しましょう";
+      alarm("再開しましょう", "休憩が5分をこえました");
+    }
+    if (left < -1800) stopRest();
+  }
+
+  // ── 歩数（夕方に少なければ歩くように促す） ──
+  const stepsToday = () => steps[todayIso()] || 0;
+  function checkSteps() {
+    const now = new Date();
+    if (now.getHours() < 17 || stepsToday() >= STEP_GOAL[0]) return;
+    if (load(LS.nudge, "") === todayIso()) return;
+    save(LS.nudge, todayIso());
+    notify("今日はあまり歩いていません", `あと${STEP_GOAL[0] - stepsToday()}歩。夕方に少し歩きましょう`);
   }
 
   let toastTimer = 0;
@@ -1470,7 +1693,9 @@ button { cursor: pointer; }
   }
   function selHTML(it, i, j) {
     const st = it.sets[j];
-    return `<select data-act="set-r" data-i="${i}" data-j="${j}" aria-label="${j + 1}セット目の回数">${numOptions(1, 30, 1, st.r)}</select>`;
+    return it.rx.unit === "sec"
+      ? `<select data-act="set-r" data-i="${i}" data-j="${j}" aria-label="${j + 1}セット目の秒数">${numOptions(10, 180, 5, st.r)}</select>`
+      : `<select data-act="set-r" data-i="${i}" data-j="${j}" aria-label="${j + 1}セット目の回数">${numOptions(1, 40, 1, st.r)}</select>`;
   }
   function setRowHTML(it, i, j) {
     const st = it.sets[j];
@@ -1481,17 +1706,17 @@ button { cursor: pointer; }
       <button type="button" class="check" data-act="check" data-i="${i}" data-j="${j}" aria-pressed="${st.done}" aria-label="${j + 1}セット目を${st.done ? "未完了に戻す" : "完了にする"}">${CHECK_SVG}<span>${st.done ? "済" : "完了"}</span></button>
     </div>`;
   }
-  const ROLE = { main: "メイン", acc: "補助", extra: "追加" };
+  const ROLE = { main: "メイン", acc: "補助", extra: "追加", abs: "腹筋", cardio: "筋トレ後の有酸素", "cardio-day": "有酸素", home: "自宅" };
 
   // 前回と比べた伸び（重さが上がれば ▲kg、同じ重さなら合計回数の差）
-  function gain(exId, sets, prevSets) {
+  function gain(exId, sets, prevSets, u = "回") {
     if (!prevSets || !sets.length) return null;
     const maxW = (xs) => Math.max(0, ...xs.map((x) => x.w || 0));
     const sumR = (xs) => xs.reduce((a, x) => a + (x.r || 0), 0);
     const dw = maxW(sets) - maxW(prevSets);
     if (Math.abs(dw) > 1e-6) return { up: dw > 0, text: `${dw > 0 ? "▲" : "▼"}${fmtKg(Math.abs(dw))}kg` };
     const dr = sumR(sets) - sumR(prevSets);
-    return dr ? { up: dr > 0, text: `${dr > 0 ? "+" : "−"}${Math.abs(dr)}回` } : { up: false, text: "前回と同じ" };
+    return dr ? { up: dr > 0, text: `${dr > 0 ? "+" : "−"}${Math.abs(dr)}${u}` } : { up: false, text: "前回と同じ" };
   }
   // 種目カード（全部を一度に並べる。どの順番からやってもよい）
   function exCardHTML(it, i) {
@@ -1500,12 +1725,13 @@ button { cursor: pointer; }
     const left = it.sets.filter((x) => !x.done).length;
     const h = perfHistory(ex.id, 1)[0];
     const doneSets = it.sets.filter((x) => x.done);
-    const g = doneSets.length && h ? gain(ex.id, doneSets, h.it.sets) : null;
-    const reps = `<b>${Math.max(...it.sets.map((x) => x.r))}</b>回<span class="x">×</span><b>${it.sets.length}</b>セット`;
+    const u = it.rx.unit === "sec" ? "秒" : "回";
+    const g = doneSets.length && h ? gain(ex.id, doneSets, h.it.sets, u) : null;
+    const reps = `<b>${Math.max(...it.sets.map((x) => x.r))}</b>${u}<span class="x">×</span><b>${it.sets.length}</b>セット`;
     const head = `<div class="now-head">
         ${thumbHTML(ex.icon)}
         <div class="now-main">
-          <span class="now-step">${PART_NAMES[it.part]}${it.role === "main" ? "" : `・${ROLE[it.role]}`}${it.optional ? "（省略可）" : ""}${ex.no ? `<span class="mno">${ex.no}番</span>` : ""}</span>
+          <span class="now-step">${PART_NAMES[it.part]}${it.optional ? "（省略可）" : ""}${ex.no ? `<span class="mno">${ex.no}番</span>` : ""}<span class="rest-tag">休憩${fmtSec((REST_SEC[ex.kind] || 90) + (it.restExtra || 0))}</span></span>
           <span class="now-name">${esc(ex.name)}</span>
           <span class="reps">${reps}</span>
         </div>
@@ -1514,8 +1740,8 @@ button { cursor: pointer; }
     // 前回の記録と、今日の目標（前回より少しでも上）
     const total = it.sets.reduce((a, x) => a + x.r, 0);
     const goal = !h ? "" : it.sug && it.sug.up ? `<span class="goal up">▲${fmtKg(itemWeight(it) - Math.max(...h.it.sets.map((x) => x.w || 0)))}kg</span>`
-      : `<span class="goal">目標 ${total}回</span>`;
-    const prev = `<div class="prev">${h ? `<span class="prev-l">前回 ${dateLabel(h.date)}</span><span class="prev-v">${valHTML({ unit: "reps", ...h.it })}</span>${goal}` : '<span class="prev-l">はじめて</span>'}</div>`;
+      : `<span class="goal">目標 ${total}${u}</span>`;
+    const prev = `<div class="prev">${h ? `<span class="prev-l">前回 ${dateLabel(h.date)}</span><span class="prev-v">${valHTML({ unit: it.rx.unit, ...h.it })}</span>${goal}` : '<span class="prev-l">はじめて</span>'}</div>`;
     const gainTag = g ? `<span class="gain${g.up ? " up" : ""}">${g.up ? "前回より " : ""}${g.text}</span>` : "";
     const allLabel = done ? "完了（押すと取り消し）" : left < it.sets.length ? `残り${left}セットをまとめて完了` : `${it.sets.length}セットまとめて完了`;
     const allBtn = `<button type="button" class="all-btn" data-act="check-all" data-i="${i}" aria-pressed="${done}">${CHECK_SVG}<span>${allLabel}</span></button>`;
@@ -1544,6 +1770,35 @@ button { cursor: pointer; }
       </div>
     </section>`;
   }
+  // 有酸素のカード（マシンの切り替え・時間・インターバル）
+  function cardioCardHTML(it, i) {
+    const ex = EX[it.exId];
+    const done = itemDone(it);
+    const m = it.sets[0].m;
+    const pick = it.role === "home" ? "" : `<div class="cpick">${CARDIO_EX.map((id) => EX[id]).filter(usable).map((e) => `<button type="button" class="chip" data-act="cardio-pick" data-i="${i}" data-v="${e.id}" aria-pressed="${e.id === it.exId}">${e.no} ${esc(e.name.replace(/（.*）/, ""))}</button>`).join("")}</div>`;
+    const iv = it.role === "cardio-day" && cur.intervalOK ? `<button type="button" class="btn${cur.interval ? " primary" : ""}" data-act="interval">${cur.interval ? "✓ インターバルにする" : "インターバルにする（週1回まで）"}</button>` : "";
+    const how = cur.interval && it.role === "cardio-day" ? "30秒速く → 90秒ゆっくり を 8〜10本" : "会話がぎりぎりできる強さ";
+    const head = `<div class="now-head">
+        ${thumbHTML(ex.icon)}
+        <div class="now-main">
+          <span class="now-step">${ROLE[it.role]}${it.optional ? "（時間があれば）" : ""}${ex.no ? `<span class="mno">${ex.no}番</span>` : ""}</span>
+          <span class="now-name">${esc(ex.name)}</span>
+          <span class="reps"><b>${m}</b>分</span>
+        </div>
+      </div>`;
+    const btn = `<button type="button" class="all-btn" data-act="check-all" data-i="${i}" aria-pressed="${done}">${CHECK_SVG}<span>${done ? "完了（押すと取り消し）" : `${m}分 完了`}</span></button>`;
+    if (done) return `<section class="now complete" id="ex-${i}">${head}<div class="ex-body">${btn}</div></section>`;
+    return `<section class="now cardio" id="ex-${i}">
+      ${head}
+      <div class="ex-body">
+        ${pick}
+        <div class="set-row"><span class="set-no">時間</span><label class="field"><select data-act="set-m" data-i="${i}" aria-label="時間（分）">${numOptions(5, 60, 5, m)}</select><span class="u">分</span></label></div>
+        <p class="how">${how}</p>
+        ${iv}
+        ${btn}
+      </div>
+    </section>`;
+  }
   // 部位ごとの週合計セット数（目標9〜12）。now＝記録済み、plus＝今日の分
   function partChipsHTML(now, plus) {
     return `<div class="pchips">${PART_IDS.map((p) => {
@@ -1555,21 +1810,36 @@ button { cursor: pointer; }
     }).join("")}</div>`;
   }
 
+  // 歩数のカード（目標 7,000〜10,000歩）
+  function stepsHTML() {
+    const n = stepsToday();
+    const pct = Math.min(100, Math.round((n / STEP_GOAL[1]) * 100));
+    const left = STEP_GOAL[0] - n;
+    return `<div class="steps">
+        <div class="st-head"><b>今日の歩数</b><span>目標 ${STEP_GOAL[0].toLocaleString()}〜${STEP_GOAL[1].toLocaleString()}歩</span></div>
+        <div class="st-row"><input type="number" inputmode="numeric" min="0" step="100" class="st-in" data-act="steps" value="${n || ""}" placeholder="0" aria-label="今日の歩数"><span>歩</span>
+          <span class="st-left ${left > 0 ? "" : "ok"}">${left > 0 ? `あと${left.toLocaleString()}歩` : "✓ 達成"}</span></div>
+        <div class="st-bar"><i style="width:${pct}%"></i><em style="left:${(STEP_GOAL[0] / STEP_GOAL[1]) * 100}%"></em></div>
+      </div>`;
+  }
+
   function renderMenu() {
     ensureToday();
     const now = new Date();
     const today = todayIso();
+    const t = cur.type;
     const doneItems = cur.items.filter(itemDone).length;
-    const todayLogs = logs.filter((s) => s.date === today);
-    const last = lastFull("9999-12-31");
-    const inOrder = cur.day === nextKey();
-    const parts = [...new Set(cur.items.map((it) => PART_NAMES[it.part]))].join("・");
-    const mon = mondayOf(now);
-    const weekNow = partSets(formatDateISO(mon), today);
-    const plus = {};
-    cur.items.forEach((it) => { if (it.part in weekNow) plus[it.part] = (plus[it.part] || 0) + it.sets.length; });
-    const prevW = partSets(formatDateISO(addDays(mon, -7)), formatDateISO(addDays(mon, -1)));
-    const hadPrev = logs.some((s) => s.date >= formatDateISO(addDays(mon, -7)) && s.date < formatDateISO(mon));
+    const doneToday = logs.some((s) => s.date === today && ["strength", "cardio", "home"].includes(sessionType(s)));
+    const parts = [...new Set(cur.items.filter((it) => it.part !== "cardio").map((it) => PART_NAMES[it.part]))].join("・");
+    const badge = t === "strength" ? cur.day : t === "cardio" ? "有" : t === "rest" ? "休" : "家";
+    const title = t === "strength" ? `<span class="dh-parts">筋トレ　${parts}</span>` : `<span class="dh-parts">${DAY_TYPES[t]}の日</span>`;
+    const tags = [cur.mode && cur.mode !== "normal" ? MODES[cur.mode].name : "", cur.override ? "手で変更" : ""].filter(Boolean).map((x) => `<span class="dh-mode">${x}</span>`).join("");
+    // 夕方になっても歩数が少ない日は、いちばん上で促す
+    const walkNudge = now.getHours() >= 17 && stepsToday() < STEP_GOAL[0] ? `<p class="nudge">夕方です。あと${(STEP_GOAL[0] - stepsToday()).toLocaleString()}歩、歩きましょう</p>` : "";
+    // 週1回：体重・ウエストを測る日
+    const lastBody = body.length ? body.map((b) => b.date).sort().pop() : null;
+    const bodyNudge = !lastBody || daysBetween(lastBody, today) >= 7 ? `<button type="button" class="nudge link-like" data-act="goto-body">今日は体重・ウエストを測る日 ›</button>` : "";
+    const adv = advice().map((a) => `<p class="adv ${a.kind}">${esc(a.text)}</p>`).join("");
 
     const eqCount = EQUIP.filter((q) => settings.equip[q.id]).length;
     const eqTile = (q) => `<button type="button" class="eq-tile" data-act="eq-toggle" data-v="${q.id}" aria-pressed="${!!settings.equip[q.id]}" aria-label="${esc(q.name)}">${pictoSVG(q.icon)}<span>${q.no}</span></button>`;
@@ -1579,38 +1849,49 @@ button { cursor: pointer; }
           <div class="eq-grid">${EQUIP.map(eqTile).join("")}</div></div>
       </div>`;
 
-    const orderIdx = cur.items.map((_, i) => i).sort((a, b) => itemDone(cur.items[a]) - itemDone(cur.items[b]) || a - b);
-    const main = cur.items.length ? `<div class="list">${orderIdx.map((i) => exCardHTML(cur.items[i], i)).join("")}</div>`
-      : `<div class="empty">今日できる種目がありません。下の「時間・器具」で使える器具を選んでください。</div>`;
-
-    const jump = cur.items.length ? `<nav class="jump" aria-label="今日の種目">${cur.items.map((it, i) => {
+    const card = (it, i) => (it.part === "cardio" ? cardioCardHTML(it, i) : exCardHTML(it, i));
+    const orderIdx = cur.items.map((_, i) => i).sort((a, b) => itemDone(cur.items[a]) - itemDone(cur.items[b]) || (cur.items[a].part === "cardio") - (cur.items[b].part === "cardio") || a - b);
+    let main = "";
+    if (doneToday && !anyDone() && !showAgain) {
+      const tm = planFor(isoAdd(today, 1));
+      main = `<div class="done-today"><b>✓ 今日の分は記録済み</b><span>明日の予定：${DAY_TYPES[tm.type]}${tm.type === "strength" ? `（メニュー${nextKey()}）` : ""}</span>
+        <div class="row-btns"><button type="button" class="btn" data-act="see-today">記録を見る</button><button type="button" class="btn ghost" data-act="show-again">もう少しやる</button></div></div>`;
+    } else if (t === "rest") {
+      main = `<div class="rest-day"><b>今日は体を休める日</b><span>歩数の目標だけ意識しましょう</span></div>`;
+    } else if (cur.items.length) {
+      main = `<div class="list">${orderIdx.map((i) => card(cur.items[i], i)).join("")}</div>
+        <button type="button" class="btn primary block" data-act="finish">記録して終える</button>`;
+    } else {
+      main = `<div class="empty">今日できる種目がありません。下の「時間・器具」で使える器具を選んでください。</div>`;
+    }
+    const showList = cur.items.length && t !== "rest" && !(doneToday && !anyDone() && !showAgain);
+    const jump = showList ? `<nav class="jump" aria-label="今日の種目">${cur.items.map((it, i) => {
       const ex = EX[it.exId];
       const d = itemDone(it);
       const n = it.sets.filter((x) => x.done).length;
-      return `<button type="button" class="jp${d ? " done" : n ? " doing" : ""}" data-act="jump" data-i="${i}" aria-label="${esc(ex.name)}へ（${n}/${it.sets.length}セット）">
+      const isC = it.part === "cardio";
+      return `<button type="button" class="jp${d ? " done" : n ? " doing" : ""}" data-act="jump" data-i="${i}" aria-label="${esc(ex.name)}へ">
           <span class="jp-ic">${pictoSVG(ex.icon)}${d ? '<i class="jp-ok">✓</i>' : ""}</span>
-          <span class="jp-l">${PART_NAMES[it.part]}</span>
-          <span class="jp-n"><b>${n}</b>/${it.sets.length}</span>
+          <span class="jp-l">${isC ? "有酸素" : PART_NAMES[it.part]}</span>
+          <span class="jp-n">${isC ? `<b>${it.sets[0].m}</b>分` : `<b>${n}</b>/${it.sets.length}`}</span>
         </button>`;
     }).join("")}</nav>` : "";
+    const offBtn = t === "off" ? `<button type="button" class="mini" data-act="off-undo">やっぱり行ける</button>`
+      : t !== "rest" && !doneToday && !anyDone() ? `<button type="button" class="mini" data-act="off-today">今日は行けない</button>` : "";
 
     $("#view-menu").innerHTML = `
       ${jump}
       <div class="day-hero">
-        <div class="dh-row"><span class="dh-date">${now.getMonth() + 1}月${now.getDate()}日（${DOW[now.getDay()]}）</span><span class="dh-sum"><b>${doneItems}</b>/${cur.items.length}種目 完了<br>約${menuMinutes()}分 · ${curSets()}セット</span></div>
-        <div class="dh-title"><b class="key">${cur.mode === "tired" ? "補" : cur.day}</b><span class="dh-parts">${parts}</span>${cur.mode !== "normal" ? `<span class="dh-mode">${MODES[cur.mode].name}</span>` : ""}</div>
-        <div class="dh-check"><span class="dh-prev">${last ? `前回 ${dateLabel(last.date)} メニュー${last.day}` : "はじめはメニューAから"}</span>${inOrder ? '<span class="dh-ok">✓ 順番どおり</span>' : '<span class="dh-ng">△ 順番と違います</span>'}</div>
+        <div class="dh-row"><span class="dh-date">${now.getMonth() + 1}月${now.getDate()}日（${DOW[now.getDay()]}）</span>${showList ? `<span class="dh-sum"><b>${doneItems}</b>/${cur.items.length} 完了<br>約${menuMinutes()}分${curSets() ? ` · ${curSets()}セット` : ""}</span>` : ""}</div>
+        <div class="dh-title"><b class="key t-${t}">${badge}</b>${title}${tags}</div>
+        <div class="dh-check"><span class="dh-prev">${esc(cur.why)}</span>${offBtn}</div>
       </div>
-      ${todayLogs.length && !anyDone() ? `<button type="button" class="done-banner" data-act="see-today">✓ 今日は記録済み。下は次のメニュー <span>記録を見る ›</span></button>` : ""}
+      ${walkNudge}${bodyNudge}${adv}
+      ${cur.notes && cur.notes.length ? `<ul class="notes">${cur.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
       ${pendingRegen ? `<div class="notice"><span>チェック済みのセットがあります。作り直すと消えます。</span>
         <div class="row-btns"><button type="button" class="btn primary" data-act="regen-yes">作り直す</button><button type="button" class="btn ghost" data-act="regen-no">このまま続ける</button></div></div>` : ""}
       ${main}
-      <button type="button" class="btn primary block" data-act="finish">記録して終える</button>
-      <div class="wk">
-        <div class="wk-head"><b>部位別セット数</b><span>目標 各${WEEK_TARGET[0]}〜${WEEK_TARGET[1]}</span></div>
-        <div class="wk-row"><span class="wk-label">今週</span>${partChipsHTML(weekNow, plus)}</div>
-        <div class="wk-row"><span class="wk-label">先週</span>${hadPrev ? partChipsHTML(prevW) : '<span class="hint">記録なし</span>'}</div>
-      </div>
+      ${stepsHTML()}
       <button type="button" class="opts" data-act="cond" aria-expanded="${condOpen}">${GEAR_SVG}<span>時間 ${settings.minutes}分・器具 ${eqCount}/${EQUIP.length}</span><em>${condOpen ? "閉じる" : "変える"}</em></button>
       ${cond}`;
   }
@@ -1710,7 +1991,7 @@ button { cursor: pointer; }
     const byEx = {};
     logs.forEach((s) => s.items.forEach((it) => {
       const ex = EX[it.exId];
-      if (!ex || ex.old || !it.sets.length) return;
+      if (!ex || ex.old || ex.part === "cardio" || !it.sets.length) return; // 有酸素は伸びの一覧に入れない
       const val = weighted(ex) ? Math.max(...it.sets.map((x) => x.w || 0)) : Math.max(...it.sets.map((x) => x.r || 0));
       (byEx[it.exId] = byEx[it.exId] || []).push({ date: s.date, val });
     }));
@@ -1734,6 +2015,48 @@ button { cursor: pointer; }
         <div class="vbars">${bars}</div>
         <div class="grow-head"><b>種目ごとの伸び</b><span>はじめ→いま</span></div>
         <ul class="prs">${rows}</ul>
+      </div>`;
+  }
+
+  // 体重・ウエスト（週1回、同じ条件で）
+  function bodyHTML() {
+    const b = body.slice().sort((x, y) => (x.date < y.date ? 1 : -1));
+    const rows = b.slice(0, 6).map((r, k) => {
+      const p = b[k + 1];
+      const d = (a, c) => (a != null && c != null ? a - c : null);
+      const dw = p ? d(r.weight, p.weight) : null;
+      const dc = p ? d(r.waist, p.waist) : null;
+      const tag = (v, u) => (v == null ? "" : `<em class="${v < 0 ? "down" : v > 0 ? "up" : ""}">${v > 0 ? "+" : v < 0 ? "−" : "±"}${fmtKg(Math.abs(v))}${u}</em>`);
+      return `<li><span class="bd-date">${dateLabel(r.date)}</span><span>${r.weight != null ? `<b>${fmtKg(r.weight)}</b>kg${tag(dw, "")}` : "—"}</span><span>${r.waist != null ? `<b>${fmtKg(r.waist)}</b>cm${tag(dc, "")}` : "—"}</span></li>`;
+    }).join("");
+    return `<div class="bodyrec" id="bodyrec">
+        <div class="grow-head"><b>体重・ウエスト</b><span>週1回・朝トイレのあと食事の前に</span></div>
+        <div class="bd-in">
+          <label><input type="number" inputmode="decimal" step="0.1" id="inWeight" placeholder="体重"><span>kg</span></label>
+          <label><input type="number" inputmode="decimal" step="0.5" id="inWaist" placeholder="へそ周り"><span>cm</span></label>
+          <button type="button" class="btn primary" data-act="body-save">記録</button>
+        </div>
+        ${rows ? `<ul class="bd-list">${rows}</ul>` : ""}
+      </div>`;
+  }
+  function adviceHTML() {
+    const a = advice();
+    return a.length ? `<div class="advs">${a.map((x) => `<p class="adv ${x.kind}">${esc(x.text)}</p>`).join("")}</div>` : "";
+  }
+  // 今週の内訳（筋トレ・有酸素の日数と、歩数の平均）
+  function weekSummaryHTML(today) {
+    const mon = formatDateISO(mondayOf(today));
+    const tIso = formatDateISO(today);
+    const days = [];
+    for (let d = mon; d <= tIso; d = isoAdd(d, 1)) days.push(d);
+    const st = days.filter(strengthOn).length;
+    const ca = days.filter((d) => typesOn(d).has("cardio")).length;
+    const stepList = days.map((d) => steps[d]).filter((n) => n);
+    const avg = stepList.length ? Math.round(stepList.reduce((a, n) => a + n, 0) / stepList.length) : null;
+    return `<div class="wsum">
+        <span><b>${st}</b>日<small>筋トレ</small></span>
+        <span><b>${ca}</b>日<small>有酸素</small></span>
+        <span><b>${avg != null ? avg.toLocaleString() : "—"}</b><small>平均歩数</small></span>
       </div>`;
   }
 
@@ -1764,7 +2087,7 @@ button { cursor: pointer; }
       const kindCls = !ss ? "" : daySets ? "k-heat" : "k-c";
       const r = Math.min(1, daySets / 16);
       const heatStyle = daySets ? ` style="background:${heatColor(r)};border-color:${heatColor(r)};color:${r > 0.45 ? "#fff" : "#5a0a05"}"` : "";
-      const keys = ss ? [...new Set(ss.filter((s) => s.v === 3 && KEYS.includes(s.day) && !s.light).map((s) => s.day))].join("") : "";
+      const keys = ss ? [...new Set(ss.filter((s) => s.v >= 3 && KEYS.includes(s.day) && !s.light && sessionType(s) === "strength").map((s) => s.day))].join("") : "";
       const up = ss && ss.some((s) => s.items.some((it) => diffHTML(it, logs.indexOf(s)).includes('class="diff up"')));
       const cls = ["cal-day", kindCls, iso === tIso ? "today" : "", iso === selDay ? "sel" : ""].filter(Boolean).join(" ");
       cells += d > today ? `<span class="cal-day future">${n}</span>`
@@ -1785,7 +2108,7 @@ button { cursor: pointer; }
           rows.push(`<li><span class="dl-main"><span class="dl-name">${esc(ex ? ex.name : it.exId)}</span><span class="dl-val">${valHTML(it)}</span></span>${diffHTML(it, idx)}</li>`);
         });
       });
-      const keys = [...new Set(daySessions.map((s) => (s.light ? "補助だけ" : s.v === 3 && KEYS.includes(s.day) ? `メニュー${s.day}` : "")).filter(Boolean))];
+      const keys = [...new Set(daySessions.map((s) => { const ty = sessionType(s); return ty === "home" ? "自宅" : ty === "cardio" ? (s.interval ? "インターバル" : "有酸素") : s.v >= 3 && KEYS.includes(s.day) ? `メニュー${s.day}` : ""; }).filter(Boolean))];
       const sets = daySessions.reduce((a, s) => a + s.items.reduce((b, it) => b + (it.unit === "min" ? 0 : it.sets.length), 0), 0);
       const mins = daySessions.reduce((a, s) => a + Math.max(1, Math.round((s.endedAt - s.startedAt) / 60000)), 0);
       const del = pendingDelete === selDay
@@ -1808,13 +2131,15 @@ button { cursor: pointer; }
         const g = prev ? gain(it.exId, it.sets, prev.sets) : null;
         return g && g.up ? `<li>${esc(EX[it.exId] ? EX[it.exId].name : it.exId)} <b>${g.text}</b></li>` : "";
       }).filter(Boolean);
-      summary = `<div class="summary"><b>✓ おつかれさまでした。次はメニュー${nextKey()}</b>${ups.length ? `<span class="sum-up">前回より伸びた ${ups.length}種目</span><ul>${ups.join("")}</ul>` : ""}</div>`;
+      summary = `<div class="summary"><b>✓ おつかれさまでした</b>${ups.length ? `<span class="sum-up">前回より伸びた ${ups.length}種目</span><ul>${ups.join("")}</ul>` : ""}</div>`;
     }
     // 記録したばかりの時は、その日の中身をいちばん上に
     $("#view-log").innerHTML = `
       ${summary}
       ${lastSummary ? day : ""}
-      ${weekPartsHTML(today)}
+      ${adviceHTML()}
+      ${weekSummaryHTML(today)}
+      ${bodyHTML()}
       ${growthHTML(today)}
       ${periodHTML(today)}
       <div class="cal">
@@ -1837,19 +2162,22 @@ button { cursor: pointer; }
   function renderSettings() {
     ensureToday();
     const mc = EQUIP.map((q) => `<label class="mc"><input type="checkbox" data-act="equip" data-v="${q.id}"${settings.equip[q.id] ? " checked" : ""}>${thumbHTML(q.icon)}<span class="mc-tick">${CHECK_SVG}</span><span class="mc-name">${q.no} ${esc(q.name)}</span></label>`).join("");
-    const menus = KEYS.map((k) => `<li><b>${k}</b><span><em>${MENUS[k].map((s) => PARTS[s.part]).join("・")}</em>${MENUS[k].map((s) => esc(EX[s.ex[0]].name)).join("／")}</span></li>`).join("");
-    const am = cur.modeAuto || autoMode();
-    const modeChips = [["auto", `自動（${MODES[am.mode].name}）`], ...Object.entries(MODES).map(([k, m]) => [k, `${m.name} ${k === "tired" ? "補助だけ" : m.sets + "セット"}`])]
-      .map(([k, label]) => chip("mode", k, label, k === "auto" ? !cur.modeOverride : cur.modeOverride === k)).join("");
+    const menus = KEYS.map((k) => `<li><b>${k}</b><span><em>${MENUS[k].map((sl) => PART_NAMES[sl.part]).join("・")}</em>${MENUS[k].map((sl) => esc(EX[sl.ex[0]].name)).join("／")}</span></li>`).join("");
+    const auto = planFor(todayIso());
+    const dtypes = [["auto", `自動（${DAY_TYPES[auto.type]}）`], ["strength", "筋トレ"], ["cardio", "有酸素"], ["rest", "休む"]]
+      .map(([k, label]) => chip("dtype", k, label, k === "auto" ? !cur.override : cur.override === k)).join("");
+    const perm = "Notification" in window ? Notification.permission : "unsupported";
     $("#view-settings").innerHTML = `
-      <div class="card"><h3>今日の内容</h3><div class="chips">${modeChips}</div></div>
-      <div class="card"><h3>メニュー（A→B→Cの順）</h3><ul class="menu-def">${menus}</ul></div>
+      <div class="card"><h3>今日の内容</h3><div class="chips">${dtypes}</div></div>
+      <div class="card"><h3>筋トレのメニュー（A→B→Cの順）</h3><ul class="menu-def">${menus}</ul></div>
       <div class="card"><h3>1回の時間</h3><div class="chips">${MINUTES.map((m) => chip("minutes", m, `<span class="n">${m}</span>分`, settings.minutes === m)).join("")}</div></div>
+      <div class="card"><h3>通知（休憩の終わり・歩数）</h3>
+        ${perm === "granted" ? '<p class="fine">✓ オン</p>' : perm === "unsupported" ? '<p class="fine">この画面では通知を使えません（アプリ版で使えます）</p>' : `<button type="button" class="btn" data-act="notify-on">通知をオンにする</button>`}</div>
       <div class="card"><h3>使える器具</h3><div class="machines">${mc}</div></div>
       <div class="card"><h3>データ</h3>
         <p class="fine">この端末のブラウザに保存（${logs.length}回分）</p>
         <div class="row-btns"><button type="button" class="btn" data-act="export">記録を書き出す</button><button type="button" class="btn" data-act="import-open">記録を読み込む</button></div>
-        ${xfer === "export" ? `<textarea class="xfer" readonly aria-label="書き出した記録">${esc(JSON.stringify({ app: "spotter", v: 1, logs, settings }))}</textarea>
+        ${xfer === "export" ? `<textarea class="xfer" readonly aria-label="書き出した記録">${esc(JSON.stringify({ app: "spotter", v: 2, logs, settings, body, steps, off: offDays }))}</textarea>
           <button type="button" class="btn primary" data-act="copy-export">コピーする</button>` : ""}
         ${xfer === "import" ? `<textarea class="xfer" id="importText" placeholder="書き出した記録をここに貼り付け" aria-label="読み込む記録"></textarea>
           <button type="button" class="btn primary" data-act="import-run">読み込む</button>` : ""}
@@ -1890,6 +2218,7 @@ button { cursor: pointer; }
 
   // ── イベント ──
   document.addEventListener("click", (e) => {
+    unlockAudio();
     const t = e.target.closest("[data-act], [data-tab]");
     if (!t) return;
     if (t.dataset.tab) { switchTab(t.dataset.tab); return; }
@@ -1906,13 +2235,76 @@ button { cursor: pointer; }
         condOpen = !condOpen;
         renderMenu();
         break;
-      case "mode": {
-        // 設定の「今日の内容」。記録中は変えない
+      case "dtype": {
+        // 設定の「今日の内容」（筋トレ／有酸素／休む）。記録中は変えない
         if (anyDone()) { toast("記録中は変えられません"); break; }
         const v = t.dataset.v;
         rebuild(v === "auto" ? null : v);
         renderSettings();
-        toast(`今日の内容：${v === "auto" ? "自動" : MODES[v].name}`);
+        toast(`今日の内容：${v === "auto" ? "自動" : DAY_TYPES[v]}`);
+        break;
+      }
+      case "off-today":
+        offDays[todayIso()] = true;
+        saveOff(); rebuild(null); renderMenu();
+        break;
+      case "off-undo":
+        delete offDays[todayIso()];
+        saveOff(); rebuild(null); renderMenu();
+        break;
+      case "show-again":
+        showAgain = true;
+        rebuild(cur.type === "rest" ? "strength" : cur.override);
+        renderMenu();
+        break;
+      case "cardio-pick":
+        cur.items[i].exId = t.dataset.v;
+        saveCur(); renderMenu();
+        break;
+      case "interval":
+        cur.interval = !cur.interval;
+        cur.items.forEach((it) => { if (it.role === "cardio-day") it.sets[0].m = cur.interval ? 20 : Math.max(CARDIO_DAY[0], Math.min(CARDIO_DAY[1], settings.minutes - 5)); });
+        saveCur(); renderMenu();
+        break;
+      case "timer-add":
+        timer.end = Math.max(timer.end, Date.now()) + 30000;
+        timer.total += 30;
+        timer.beeped = false;
+        timer.nudged = false;
+        $("#timer").classList.remove("late");
+        tickRest();
+        break;
+      case "timer-extend": {
+        // 目標回数に届かなかった：この種目の休憩をこれから30秒長く
+        const it = cur.items[timer.i];
+        if (it) it.restExtra = (it.restExtra || 0) + 30;
+        timer.end += 30000;
+        timer.total += 30;
+        $("#timerAsk").hidden = true;
+        saveCur(); tickRest();
+        if (tab === "menu") renderMenu();
+        break;
+      }
+      case "timer-skip":
+        stopRest();
+        break;
+      case "notify-on":
+        try {
+          Notification.requestPermission().then(() => renderSettings());
+        } catch (err) { toast("通知を使えませんでした"); }
+        break;
+      case "goto-body":
+        switchTab("log");
+        setTimeout(() => { const el = $("#bodyrec"); if (el) el.scrollIntoView({ block: "start" }); const w = $("#inWeight"); if (w) w.focus(); }, 50);
+        break;
+      case "body-save": {
+        const w = parseFloat($("#inWeight").value);
+        const c = parseFloat($("#inWaist").value);
+        if (!(w > 0) && !(c > 0)) { toast("体重かウエストを入れてください"); break; }
+        const d = todayIso();
+        body = body.filter((r) => r.date !== d).concat([{ date: d, weight: w > 0 ? w : null, waist: c > 0 ? c : null }]);
+        saveBody(); renderLog();
+        toast("記録しました");
         break;
       }
       case "eq-toggle": {
@@ -1962,6 +2354,8 @@ button { cursor: pointer; }
         st.done = !st.done;
         if (st.done && !cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
+        // セットを終えたら休憩タイマーを自動で開始（全部終わったら止める）
+        if (st.done && cur.items.some((x) => x.part !== "cardio" && !itemDone(x))) startRest(i, j); else if (st.done) stopRest();
         break;
       }
       case "check-all": {
@@ -1970,12 +2364,13 @@ button { cursor: pointer; }
         it.sets.forEach((x) => { x.done = !all; });
         if (!all && !cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
+        if (!all && it.part !== "cardio" && cur.items.some((x) => x.part !== "cardio" && !itemDone(x))) startRest(i, it.sets.length - 1);
         break;
       }
       case "add-set": {
         const it = cur.items[i];
         const lastSet = it.sets[it.sets.length - 1];
-        it.sets.push({ w: lastSet ? lastSet.w : null, r: lastSet ? lastSet.r : 10, done: false });
+        it.sets.push({ w: lastSet ? lastSet.w : null, r: lastSet ? lastSet.r : 10, t: lastSet ? lastSet.t : null, done: false });
         saveCur(); renderMenu();
         break;
       }
@@ -2029,7 +2424,7 @@ button { cursor: pointer; }
       case "copy-export": {
         const ta = $(".xfer");
         ta.select();
-        const done = () => toast("コピーしました。アプリ版の「記録を読み込む」に貼り付けてください");
+        const done = () => toast("コピーしました。別の端末の「記録を読み込む」に貼り付けてください");
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, () => { try { document.execCommand("copy"); done(); } catch (err) { toast("長押しでコピーしてください"); } });
         else { try { document.execCommand("copy"); done(); } catch (err) { toast("長押しでコピーしてください"); } }
         break;
@@ -2043,7 +2438,11 @@ button { cursor: pointer; }
         const add = data.logs.filter((x) => x && x.id && x.date && Array.isArray(x.items) && !have.has(x.id));
         logs = logs.concat(add).sort((a, b) => (a.startedAt || 0) - (b.startedAt || 0));
         saveLogs();
-        if (data.settings && data.settings.v === SETTINGS_VER && data.settings.equip) { Object.assign(settings, { minutes: data.settings.minutes, equip: data.settings.equip }); saveSettings(); }
+        if (data.settings && data.settings.v === SETTINGS_VER && data.settings.equip) { Object.assign(settings, { equip: data.settings.equip }); saveSettings(); }
+        // 体重・ウエスト、歩数、行けない日も（同じ日は読み込んだほうを使う）
+        if (Array.isArray(data.body)) { const m = new Map(body.map((r) => [r.date, r])); data.body.forEach((r) => r && r.date && m.set(r.date, r)); body = [...m.values()]; saveBody(); }
+        if (data.steps && typeof data.steps === "object") { steps = { ...steps, ...data.steps }; saveSteps(); }
+        if (data.off && typeof data.off === "object") { offDays = { ...offDays, ...data.off }; saveOff(); }
         xfer = null;
         if (!anyDone()) rebuild();
         renderSettings();
@@ -2055,6 +2454,9 @@ button { cursor: pointer; }
         break;
       case "wipe-yes":
         logs = [];
+        offDays = {};
+        steps = {};
+        body = [];
         Object.assign(settings, defaultSettings());
         try { Object.values(LS).forEach((k) => localStorage.removeItem(k)); } catch (err) { /* 無視 */ }
         cur = null;
@@ -2084,6 +2486,17 @@ button { cursor: pointer; }
       saveCur();
       return;
     }
+    if (act === "set-m") {
+      cur.items[i].sets[0].m = Number(t.value);
+      saveCur(); renderMenu();
+      return;
+    }
+    if (act === "steps") {
+      const n = Math.max(0, Math.round(Number(t.value) || 0));
+      if (n) steps[todayIso()] = n; else delete steps[todayIso()];
+      saveSteps(); renderMenu();
+      return;
+    }
     if (act === "equip") {
       settings.equip[t.dataset.v] = t.checked;
       settingsChanged();
@@ -2099,11 +2512,12 @@ button { cursor: pointer; }
     ensureToday();
     selDay = null;
     calMonth = null;
+    stopRest();
     switchTab(tab);
   }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkDayChange(); });
   window.addEventListener("focus", checkDayChange);
-  setInterval(checkDayChange, 60000);
+  setInterval(() => { checkDayChange(); checkSteps(); }, 60000);
 
   // 起動
   ensureToday();
