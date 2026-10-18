@@ -2321,7 +2321,9 @@ button { cursor: pointer; }
     const sumR = (x) => x.sets.reduce((a, s) => a + (s.r || 0), 0);
     const dw = maxW(it) - maxW(prev);
     if (Math.abs(dw) > 1e-6) return `<span class="diff ${dw > 0 ? "up" : "down"}">${dw > 0 ? "▲" : "▼"}${fmtKg(Math.abs(dw))}kg</span>`;
-    const dr = sumR(it) - sumR(prev);
+    // 同じ重さ：セット数が同じなら合計回数、違えばいちばん多かったセットの回数で比べる
+    const maxR = (x) => Math.max(0, ...x.sets.map((s) => s.r || 0));
+    const dr = it.sets.length === prev.sets.length ? sumR(it) - sumR(prev) : maxR(it) - maxR(prev);
     if (dr) return `<span class="diff ${dr > 0 ? "up" : "down"}">${dr > 0 ? "+" : "−"}${Math.abs(dr)}${it.unit === "sec" ? "秒" : "回"}</span>`;
     return '<span class="diff same">→</span>';
   }
@@ -2488,7 +2490,9 @@ button { cursor: pointer; }
       const kindCls = !ss ? "" : daySets ? "k-heat" : "k-c";
       const r = Math.min(1, daySets / 16);
       const heatStyle = daySets ? ` style="background:${heatColor(r)};border-color:${heatColor(r)};color:${r > 0.45 ? "#fff" : "#5a0a05"}"` : "";
-      const keys = ss ? [...new Set(ss.filter((s) => s.v >= 3 && ALL_KEYS.includes(s.day) && !s.light && sessionType(s) === "strength").map((s) => menuBadge(s.day)))].join("") : "";
+      // カレンダーの印：筋トレのメニュー（上・下・全など）、家でやった日は「家」、できない・もういいやの日は「×」
+      const keys = ss ? [...new Set(ss.filter((s) => s.v >= 3 && ALL_KEYS.includes(s.day) && !s.light && sessionType(s) === "strength").map((s) => menuBadge(s.day)))].join("") + (ss.some((s) => sessionType(s) === "home") ? "家" : "")
+        : ["cant", "enough"].includes(offKind(offDays[iso])) ? "×" : "";
       const up = ss && ss.some((s) => s.items.some((it) => diffHTML(it, logs.indexOf(s)).includes('class="diff up"')));
       const cls = ["cal-day", kindCls, iso === tIso ? "today" : "", iso === selDay ? "sel" : ""].filter(Boolean).join(" ");
       cells += d > today ? `<span class="cal-day future">${n}</span>`
