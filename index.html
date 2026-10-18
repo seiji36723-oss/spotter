@@ -593,6 +593,9 @@ button { cursor: pointer; }
   font-family: var(--font-num); font-weight: 700; font-size: 13px; line-height: 1.1;
 }
 .eq-tile svg { width: 100%; max-width: 44px; aspect-ratio: 1; }
+.gym-ic { flex: 0 0 auto; width: 46px; height: 46px; color: var(--ink); }
+.gym-ic.sm { width: 22px; height: 22px; vertical-align: -6px; margin: 0 4px 0 2px; }
+.crs-pick .gym-n { margin-left: auto; font-family: var(--font-num); font-size: 14px; font-weight: 700; color: var(--muted); }
 .eq-tile span.sn { font-family: inherit; font-size: 10px; white-space: nowrap; letter-spacing: -.02em; }
 .eq-tile[aria-pressed="false"] { border-color: var(--line); border-style: dashed; color: var(--faint); }
 .eq-tile[aria-pressed="false"] svg { opacity: .35; }
@@ -1221,7 +1224,52 @@ button { cursor: pointer; }
       ["a_cross", "クロストレーナー", "クロス", "elliptical", ["elliptical"]],
     ]) },
   };
+  // 全部の器具から選ぶ欄（[id, 名前, 短い名前, 絵, できること]）
+  GYMS.all = { name: "すべての器具", items: gymItems([
+    ["x_chest", "チェストプレス", "チェスト", "chest_press", ["chest_press"]],
+    ["x_shoulder", "ショルダープレス", "ショルダー", "shoulder_press", ["shoulder_press"]],
+    ["x_lat", "ラットプルダウン", "プル", "lat_pull", ["lat_pull"]],
+    ["x_row", "シーテッドロウ", "ロウ", "row", ["row"]],
+    ["x_biceps", "バイセップスカール", "バイセプ", "biceps_curl", ["biceps_curl"]],
+    ["x_triceps", "トライセップスエクステンション", "トライセプ", "dips", ["triceps"]],
+    ["x_dips", "ディップス", "ディップス", "dips", ["dips"]],
+    ["x_legpress", "レッグプレス", "レッグ", "leg_press", ["leg_press"]],
+    ["x_calf", "カーフプレス", "カーフ", "leg_press", ["calf"]],
+    ["x_legext", "レッグエクステンション", "エクステ", "leg_ext", ["leg_ext"]],
+    ["x_legcurl", "レッグカール", "カール", "leg_curl", ["leg_curl"]],
+    ["x_adductor", "アダクション（内もも）", "アダクト", "adductor", ["adductor"]],
+    ["x_abductor", "アブダクション（お尻の横）", "アブダクト", "abductor", ["abductor"]],
+    ["x_glute", "グルート（お尻）", "グルート", "abductor", ["glute"]],
+    ["x_fly", "ペクトラルフライ", "フライ", "pec_fly", ["pec_fly"]],
+    ["x_rear", "リアデルト", "リア", "pec_fly", ["rear_delt"]],
+    ["x_ab", "アブドミナル（腹筋マシン）", "アブ", "ab_trainer", ["ab_trainer"]],
+    ["x_abbench", "アブベンチ", "アブベンチ", "ab_bench", ["ab_bench"]],
+    ["x_back", "ローバック（背中）", "ローバック", "ab_trainer", ["back_ext"]],
+    ["x_torso", "ロータリートルソー", "トルソー", "ab_trainer", ["torso"]],
+    ["x_cable", "ケーブル", "ケーブル", "triceps_pushdown", ["cable", "row"]],
+    ["x_smith", "スミスマシン", "スミス", "squat", ["smith"]],
+    ["x_rack", "パワーラック／ハーフラック", "ラック", "squat", ["rack"]],
+    ["x_db", "ダンベル", "ダンベル", "arm_curl", ["dumbbell"]],
+    ["x_bench", "ベンチ", "ベンチ", "bench", ["bench"]],
+    ["x_tread", "トレッドミル", "トレッド", "treadmill", ["treadmill"]],
+    ["x_bike", "バイク", "バイク", "bike", ["bike"]],
+    ["x_ellip", "エリプティカル／クロストレーナー", "エリプ", "elliptical", ["elliptical"]],
+  ]) };
   const GYM_IDS = Object.keys(GYMS);
+  // ジムのアイコン（名前の代わりに出す）。[幅, 高さ, 変形, 形]
+  const GYM_ICON = {
+    choco: [239, 240, "translate(0.000000,240.000000) scale(0.100000,-0.100000)", "M20 1200 l0 -1180 1175 0 1175 0 0 1180 0 1180 -1175 0 -1175 0 0 -1180z m162 63 l3 -1078 1072 -3 1073 -2 0 -60 0 -60 -1135 0 -1135 0 -2 1140 -3 1140 62 0 63 0 2 -1077z m2148 17 l0 -1060 -1055 0 -1055 0 0 1060 0 1060 1055 0 1055 0 0 -1060z M1190 1943 c-368 -62 -619 -336 -637 -696 -19 -368 200 -670 555 -764 92 -25 310 -24 402 1 98 26 219 90 297 156 99 83 99 79 -1 179 l-84 84 -64 -57 c-60 -54 -186 -126 -222 -126 -25 0 -21 62 5 86 32 29 59 89 66 146 l6 50 -26 -26 c-33 -33 -70 -33 -95 -1 -12 15 -30 25 -45 25 -15 0 -32 9 -41 21 -12 18 -19 20 -43 12 l-28 -10 22 -12 c40 -21 76 -131 43 -131 -5 0 -10 9 -10 20 0 45 -46 104 -85 112 -29 5 -18 21 24 34 58 17 96 40 111 68 21 40 5 47 -75 35 -123 -19 -128 -21 -162 -73 -49 -72 -41 -150 24 -233 25 -31 29 -45 25 -76 -5 -43 -15 -43 -92 1 -277 158 -336 548 -118 778 196 208 506 212 723 9 27 -25 51 -45 55 -45 10 0 170 165 170 176 0 15 -78 87 -143 132 -146 101 -383 154 -557 125z M1382 1538 c-5 -7 -33 -77 -62 -156 -30 -78 -58 -141 -63 -139 -5 1 -28 65 -51 141 -44 149 -60 172 -95 137 -14 -14 -19 -29 -16 -48 3 -16 14 -77 25 -136 11 -59 20 -118 20 -130 0 -47 9 -50 112 -36 92 12 95 14 108 43 26 65 90 271 90 291 0 39 -45 61 -68 33z M1388 1218 c-6 -13 -12 -42 -13 -66 -2 -32 -9 -50 -30 -73 -27 -28 -28 -30 -12 -46 24 -25 44 -10 90 68 52 89 49 139 -8 139 -8 0 -20 -10 -27 -22z M1478 1143 c-26 -29 -68 -116 -68 -139 0 -29 28 -39 52 -17 21 19 78 115 78 131 0 12 -28 42 -39 42 -4 0 -15 -8 -23 -17z"],
+    mira: [220, 240, "translate(0.000000,240.000000) scale(0.100000,-0.100000)", "M21 1283 l4 -1098 1075 0 1075 0 3 1098 2 1097 -1081 0 -1081 0 3 -1097z m2119 -3 l0 -1060 -1040 0 -1040 0 0 1060 0 1060 1040 0 1040 0 0 -1060z M717 1769 c-13 -30 -88 -196 -167 -369 -78 -173 -171 -380 -207 -460 -110 -243 -133 -294 -143 -313 -10 -16 -1 -17 157 -15 l167 3 123 280 c69 154 128 283 132 288 4 4 76 -85 161 -198 85 -113 157 -205 160 -205 3 0 75 93 159 206 84 113 157 202 161 197 8 -8 15 -23 168 -368 l89 -200 166 -3 165 -2 -22 47 c-13 27 -59 129 -104 228 -281 624 -421 926 -429 926 -4 0 -84 -122 -178 -271 l-170 -270 -23 28 c-12 15 -46 65 -74 112 -87 142 -249 394 -258 404 -5 5 -19 -13 -33 -45z m184 -306 c22 -35 37 -63 34 -63 -3 0 -29 12 -58 26 l-52 27 -20 -28 c-11 -15 -27 -37 -36 -49 l-17 -21 -20 25 -20 25 -34 -24 c-18 -14 -48 -35 -65 -49 l-33 -24 31 68 c17 38 56 124 86 192 l56 122 54 -82 c30 -46 72 -111 94 -145z m617 70 c38 -84 66 -153 62 -153 -4 0 -28 18 -54 41 -25 22 -46 37 -46 32 0 -4 -11 -21 -24 -38 l-23 -29 -22 42 c-24 48 -23 47 -59 28 -74 -38 -74 -32 10 103 45 72 82 130 83 128 1 -1 34 -71 73 -154z"],
+    any: [239, 240, "translate(0.000000,240.000000) scale(0.100000,-0.100000)", "M20 1200 l0 -1180 1175 0 1175 0 0 1180 0 1180 -1175 0 -1175 0 0 -1180z m2314 52 c0 -598 -1 -1111 -2 -1139 l-2 -53 -1135 0 -1135 0 0 60 0 60 1075 0 1075 0 0 1079 0 1080 38 3 c20 2 48 2 62 0 l25 -4 -1 -1086z m-164 28 l0 -1060 -1055 0 -1055 0 0 1060 0 1060 1055 0 1055 0 0 -1060z M910 1725 c-45 -108 -80 -198 -77 -202 3 -3 63 -2 133 2 112 6 127 9 131 26 7 24 20 24 28 0 5 -16 21 -19 136 -26 72 -4 132 -5 134 -3 2 2 -33 92 -78 201 l-82 197 -121 0 -121 0 -83 -195z M475 1689 c-12 -18 23 -549 37 -566 14 -17 69 -16 92 0 17 12 18 26 14 125 l-4 112 30 5 c246 39 713 39 941 -1 l30 -5 -8 -112 c-10 -127 -5 -137 65 -137 30 0 40 5 48 23 11 27 42 530 34 552 -8 19 -99 21 -111 3 -4 -7 -10 -59 -13 -115 -3 -56 -8 -104 -12 -108 -3 -4 -74 1 -157 9 -188 20 -501 20 -686 1 -77 -8 -147 -15 -156 -15 -13 0 -17 19 -23 111 -3 62 -9 116 -12 120 -7 13 -102 11 -109 -2z M363 1593 c-30 -6 -31 -15 -22 -128 4 -55 8 -132 9 -172 0 -85 11 -101 65 -95 49 6 49 8 35 204 -15 216 -10 206 -87 191z M1795 1587 c-12 -31 -32 -363 -22 -374 11 -15 83 -18 91 -4 3 5 11 89 18 186 11 169 11 178 -7 191 -24 17 -74 18 -80 1z M272 1418 c-25 -25 -10 -78 22 -78 19 0 21 5 18 45 -4 45 -17 56 -40 33z M1918 1385 c-3 -37 0 -45 14 -45 26 0 42 37 29 66 -18 40 -39 30 -43 -21z M831 1349 c-46 -4 -84 -9 -86 -11 -2 -3 -249 -581 -309 -725 -14 -34 -26 -65 -26 -68 0 -3 62 -5 138 -5 l138 0 63 150 63 150 303 0 303 0 11 -32 c6 -18 33 -85 60 -148 l48 -115 143 -3 c113 -2 141 0 137 10 -301 711 -335 783 -369 790 -41 8 -248 22 -248 16 0 -2 22 -56 49 -119 27 -63 52 -125 55 -137 l7 -22 -195 0 c-162 0 -196 2 -196 14 0 8 23 67 50 131 28 64 50 121 50 126 0 10 -69 10 -189 -2z"],
+  };
+  function gymIconSVG(id, cls = "") {
+    const g = GYMS[id];
+    if (id === "all") { // すべての器具：枠の中に4つのます
+      return `<svg class="gym-ic ${cls}" viewBox="0 0 240 240" role="img" aria-label="${g.name}"><path d="M14 14h212v212H14z" fill="none" stroke="currentColor" stroke-width="7"/><path d="M58 58h52v52H58zM130 58h52v52h-52zM58 130h52v52H58zM130 130h52v52h-52z" fill="currentColor"/></svg>`;
+    }
+    const [w, h, tr, d] = GYM_ICON[id];
+    return `<svg class="gym-ic ${cls}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${g.name}"><g transform="${tr}" fill="currentColor"><path d="${d}"/></g></svg>`;
+  }
   const ALL_EQUIP = GYM_IDS.flatMap((g) => GYMS[g].items);
   const gymOf = () => GYMS[settings.gym] || GYMS.choco;
   // マシンの番号（チョコザップだけ）
@@ -2113,7 +2161,7 @@ button { cursor: pointer; }
     const eqTile = (q) => `<button type="button" class="eq-tile" data-act="eq-toggle" data-v="${q.id}" aria-pressed="${!!settings.equip[q.id]}" aria-label="${esc(q.name)}">${pictoSVG(q.icon)}<span${q.no ? "" : ' class="sn"'}>${q.short}</span></button>`;
     const cond = !condOpen ? "" : `<div class="cond">
         <div class="ctl-col"><span class="ctl-label">1回の時間</span><div class="chips">${MINUTES.map((m) => chip("minutes", m, `<span class="n">${m}</span>分`, settings.minutes === m)).join("")}</div></div>
-        <div class="ctl-col"><span class="ctl-label">${gymOf().name}の器具 <b>${eqCount}</b>/${gItems.length}</span>
+        <div class="ctl-col"><span class="ctl-label">${gymIconSVG(settings.gym, "sm")}<b>${eqCount}</b>/${gItems.length}</span>
           <div class="eq-grid">${gItems.map(eqTile).join("")}</div></div>
       </div>`;
 
@@ -2161,7 +2209,7 @@ button { cursor: pointer; }
         <div class="row-btns"><button type="button" class="btn primary" data-act="regen-yes">作り直す</button><button type="button" class="btn ghost" data-act="regen-no">このまま続ける</button></div></div>` : ""}
       ${main}
       ${stepsHTML()}
-      <button type="button" class="opts" data-act="cond" aria-expanded="${condOpen}">${GEAR_SVG}<span>時間 ${settings.minutes}分・${gymOf().name} ${eqCount}/${gItems.length}</span><em>${condOpen ? "閉じる" : "変える"}</em></button>
+      <button type="button" class="opts" data-act="cond" aria-expanded="${condOpen}">${GEAR_SVG}<span>時間 ${settings.minutes}分・${gymIconSVG(settings.gym, "sm")}${eqCount}/${gItems.length}</span><em>${condOpen ? "閉じる" : "変える"}</em></button>
       ${cond}`;
   }
 
@@ -2478,9 +2526,9 @@ button { cursor: pointer; }
     const n = g.items.filter((q) => settings.equip[q.id]).length;
     const mc = g.items.map((q) => `<label class="mc"><input type="checkbox" data-act="equip" data-v="${q.id}"${settings.equip[q.id] ? " checked" : ""}>${thumbHTML(q.icon)}<span class="mc-tick">${CHECK_SVG}</span><span class="mc-name">${q.no ? q.no + " " : ""}${esc(q.name)}</span></label>`).join("");
     return `<div class="crs${on ? " on" : ""}">
-        <div class="crs-row"><button type="button" class="crs-pick" data-act="gym" data-v="${id}" aria-pressed="${on}"><i class="crs-dot"></i><span><b>${g.name}</b><small>器具 ${n}/${g.items.length}</small></span></button>
+        <div class="crs-row"><button type="button" class="crs-pick" data-act="gym" data-v="${id}" aria-pressed="${on}" aria-label="${g.name}"><i class="crs-dot"></i>${gymIconSVG(id)}<small class="gym-n">${n}/${g.items.length}</small></button>
           <button type="button" class="crs-more" data-act="gym-more" data-v="${id}" aria-expanded="${open}" aria-label="${g.name}の器具">${open ? "▲" : "▼"}</button></div>
-        ${open ? `<div class="crs-body">${id === "choco" ? "" : '<p class="crs-note">店舗によって置いてある器具が違います。ない器具は外してください</p>'}<div class="machines">${mc}</div></div>` : ""}
+        ${open ? `<div class="crs-body">${id === "choco" || id === "all" ? "" : '<p class="crs-note">店舗によって置いてある器具が違います。ない器具は外してください</p>'}<div class="machines">${mc}</div></div>` : ""}
       </div>`;
   }
   function renderSettings() {
@@ -2669,7 +2717,7 @@ button { cursor: pointer; }
         gymOpen = v;
         saveSettings();
         if (anyDone()) toast("今日の記録を終えると切り替わります");
-        else { rebuild(null); toast(`ジム：${GYMS[v].name}`); }
+        else { rebuild(null); toast("ジムを切り替えました"); }
         renderSettings();
         break;
       }
