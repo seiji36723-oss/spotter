@@ -417,11 +417,27 @@ button { cursor: pointer; }
 .pchip.ok { background: transparent; border: 1.5px solid var(--ok); color: var(--ok); }
 .pchip.over { background: var(--surface-2); color: var(--muted); }
 .cal-key { position: absolute; bottom: 2px; left: 0; right: 0; font-style: normal; font-size: 9px; line-height: 1; text-align: center; opacity: .85; }
+.courses { display: flex; flex-direction: column; gap: 8px; }
+.crs { border: 1.5px solid var(--line); border-radius: 12px; }
+.crs.on { border-color: var(--ink); }
+.crs-row { display: flex; align-items: stretch; }
+.crs-pick { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: none; border: 0; text-align: left; color: var(--ink); }
+.crs-pick span { display: flex; flex-direction: column; min-width: 0; }
+.crs-pick b { font-size: 16px; }
+.crs-pick small { font-size: 12px; font-weight: 700; color: var(--muted); }
+.crs-dot { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--muted); }
+.crs.on .crs-dot { border: 6px solid var(--ink); }
+.crs-more { flex: 0 0 48px; background: none; border: 0; border-left: 1px solid var(--line); font-size: 14px; color: var(--ink); }
+.crs-body { display: flex; flex-direction: column; gap: 10px; padding: 4px 12px 12px; }
+.crs-week .wp { padding: 4px 0; }
+.crs-week .wp-k { width: 28px; height: 28px; font-size: 13px; }
+.crs-note { margin: 0; font-size: 12px; font-weight: 700; color: var(--muted); }
+.wp-course { margin-left: 8px; font-size: 12px; color: var(--muted); }
 .menu-def { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .menu-def li { display: flex; align-items: flex-start; }
 .menu-def li > span { display: flex; flex-direction: column; }
 .menu-def em { font-style: normal; font-weight: 700; }
-.menu-def b { flex: 0 0 auto; display: inline-grid; place-items: center; width: 1.6em; margin-right: 8px; border-radius: 6px; background: var(--ink); color: var(--bg); font-family: var(--font-display); }
+.menu-def b { flex: 0 0 auto; display: inline-grid; place-items: center; min-width: 1.8em; padding: 1px 4px; margin-right: 8px; border-radius: 6px; background: var(--ink); color: var(--bg); font-weight: 900; white-space: nowrap; }
 
 /* ── 今日のメニュー（スマホ向けに詰めた形） ── */
 .day-hero { display: flex; flex-direction: column; gap: 2px; }
@@ -1212,33 +1228,58 @@ button { cursor: pointer; }
   const EX = Object.fromEntries(EXERCISES.map((e) => [e.id, e]));
   const weighted = (ex) => !ex.bw && ex.unit === "reps";
 
-  // ── メニュー（筋トレの日に 上半身→下半身→全身 の順で回す。どれも腹筋と筋トレ後の有酸素つき） ──
-  // sets：その種目のセット数。cardio：筋トレ後の有酸素の目安（分）。各枠の種目は前から順に、使えるマシンでできるものを選ぶ
+  // ── コース（腹回り／健康／健康とガチの間／ガチ）。どれも筋トレの日は menus を前から順に回す ──
+  // S：週の筋トレ日数、C：週の有酸素だけの日数、consec：筋トレを続けてよい日数、restAfterCardio：有酸素だけの日の翌日は休み
+  // cardioEarly：週の最初の筋トレの翌日を有酸素の日に、extra：週の分が終わったあと「任意」の有酸素を出す、activeMax：直近7日でこの日数動いたら休み
+  // range：重さを使う主な種目の回数の目安（なければ種目ごとの目安）。menus の cardio：筋トレ後の有酸素の目安（分。null＝なし）
+  const sl = (part, sets, ex) => ({ part, sets, ex });
+  const CHEST = ["chest_press", "chest_press_low", "knee_pushup"];
+  const CHEST_LOW = ["chest_press_low", "chest_press", "knee_pushup"];
+  const BACK = ["lat_pull", "lat_pull_narrow", "lat_pull_under"];
+  const BACK_NARROW = ["lat_pull_narrow", "lat_pull", "lat_pull_under"];
+  const BACK_UNDER = ["lat_pull_under", "lat_pull", "lat_pull_narrow"];
+  const SHOULDER = ["shoulder_press", "shoulder_press_light"];
+  const LEGS = ["leg_press", "leg_press_high", "bw_squat"];
+  const LEGS_HIGH = ["leg_press_high", "leg_press", "glute_bridge"];
+  const INNER = ["adductor", "bw_squat"];
+  const OUTER = ["abductor", "glute_bridge"];
   const ABS_EX = ["plank", "ab_crunch", "ab_leg_raise"];
-  const MENUS = {
-    U: { name: "上半身＋腹", badge: "上", cardio: [10, 15], slots: [
-      { part: "chest", sets: 2, ex: ["chest_press", "chest_press_low", "knee_pushup"] },
-      { part: "back", sets: 2, ex: ["lat_pull", "lat_pull_narrow", "lat_pull_under"] },
-      { part: "shoulder", sets: 2, ex: ["shoulder_press", "shoulder_press_light"] },
-      { part: "abs", sets: 2, ex: ABS_EX },
-    ] },
-    L: { name: "下半身＋腹", badge: "下", cardio: [10, 10], slots: [
-      { part: "legs", sets: 3, ex: ["leg_press", "leg_press_high", "bw_squat"] },
-      { part: "legs", sets: 2, ex: ["adductor", "bw_squat"] },
-      { part: "legs", sets: 2, ex: ["abductor", "glute_bridge"] },
-      { part: "abs", sets: 2, ex: ABS_EX },
-    ] },
-    F: { name: "全身", badge: "全", cardio: [10, 15], slots: [
-      { part: "legs", sets: 2, ex: ["leg_press", "leg_press_high", "bw_squat"] },
-      { part: "chest", sets: 2, ex: ["chest_press", "chest_press_low", "knee_pushup"] },
-      { part: "back", sets: 2, ex: ["lat_pull", "lat_pull_narrow", "lat_pull_under"] },
-      { part: "abs", sets: 2, ex: ABS_EX },
-    ] },
+  const ABS_CRUNCH = ["ab_crunch", "plank", "ab_leg_raise"];
+  const ABS_RAISE = ["ab_leg_raise", "ab_crunch", "plank"];
+  const COURSES = {
+    belly: { name: "腹回り", S: 3, C: 1, consec: 2, restAfterCardio: true, cardioEarly: true, extra: true, activeMax: 5, cardioDay: [20, 20],
+      menus: {
+        U: { cardio: [10, 15], slots: [sl("chest", 2, CHEST), sl("back", 2, BACK), sl("shoulder", 2, SHOULDER), sl("abs", 2, ABS_EX)] },
+        L: { cardio: [10, 10], slots: [sl("legs", 3, LEGS), sl("legs", 2, INNER), sl("legs", 2, OUTER), sl("abs", 2, ABS_EX)] },
+        F: { cardio: [10, 15], slots: [sl("legs", 2, LEGS), sl("chest", 2, CHEST), sl("back", 2, BACK), sl("abs", 2, ABS_EX)] },
+      } },
+    health: { name: "健康", S: 2, C: 2, consec: 1, restAfterCardio: true, cardioEarly: true, extra: false, activeMax: 5, cardioDay: [20, 30], range: [12, 15],
+      menus: {
+        H1: { cardio: [10, 10], slots: [sl("legs", 2, LEGS), sl("chest", 2, CHEST), sl("back", 2, BACK), sl("abs", 2, ABS_EX)] },
+        H2: { cardio: [10, 10], slots: [sl("legs", 2, LEGS_HIGH), sl("shoulder", 2, SHOULDER), sl("back", 2, BACK_NARROW), sl("abs", 2, ABS_CRUNCH)] },
+      } },
+    mid: { name: "健康とガチの間", S: 3, C: 1, consec: 2, restAfterCardio: true, cardioEarly: true, extra: false, activeMax: 5, cardioDay: [20, 30],
+      menus: {
+        U: { cardio: [10, 10], slots: [sl("chest", 3, CHEST), sl("back", 3, BACK), sl("shoulder", 3, SHOULDER), sl("abs", 2, ABS_EX)] },
+        L: { cardio: [10, 10], slots: [sl("legs", 3, LEGS), sl("legs", 3, INNER), sl("legs", 3, OUTER), sl("abs", 2, ABS_RAISE)] },
+        F: { cardio: [10, 10], slots: [sl("legs", 3, LEGS), sl("chest", 3, CHEST_LOW), sl("back", 3, BACK_UNDER), sl("abs", 2, ABS_CRUNCH)] },
+      } },
+    hard: { name: "ガチ", S: 4, C: 1, consec: 2, restAfterCardio: false, cardioEarly: false, extra: true, activeMax: 6, cardioDay: [20, 30], range: [6, 10],
+      menus: {
+        UA: { cardio: null, slots: [sl("chest", 4, CHEST), sl("back", 4, BACK), sl("shoulder", 3, SHOULDER), sl("arms", 2, ["biceps_curl"]), sl("arms", 2, ["dips"]), sl("abs", 2, ABS_CRUNCH)] },
+        LA: { cardio: null, slots: [sl("legs", 4, LEGS), sl("legs", 3, INNER), sl("legs", 3, OUTER), sl("abs", 3, ABS_RAISE)] },
+        UB: { cardio: null, slots: [sl("chest", 4, CHEST_LOW), sl("back", 4, BACK_UNDER), sl("shoulder", 3, SHOULDER), sl("arms", 2, ["dips"]), sl("arms", 2, ["biceps_curl"]), sl("abs", 2, ABS_EX)] },
+        LB: { cardio: null, slots: [sl("legs", 4, LEGS_HIGH), sl("legs", 3, ["leg_press", "bw_squat"]), sl("legs", 3, INNER), sl("abs", 3, ABS_CRUNCH)] },
+      } },
   };
-  const KEYS = ["U", "L", "F"];
-  const ALL_KEYS = [...KEYS, "A", "B", "C"]; // A〜C は前の版の記録
-  const menuBadge = (k) => (MENUS[k] ? MENUS[k].badge : k);
-  const menuName = (k) => (MENUS[k] ? MENUS[k].name : `メニュー${k}`);
+  const COURSE_IDS = Object.keys(COURSES);
+  const course = () => COURSES[settings.course] || COURSES.belly;
+  // メニューの名前と印（記録の表示用。A〜C は前の版の記録）
+  const MENU_LABELS = { U: ["上半身＋腹", "上"], L: ["下半身＋腹", "下"], F: ["全身", "全"], H1: ["全身A", "A"], H2: ["全身B", "B"],
+    UA: ["上半身A", "上A"], LA: ["下半身A", "下A"], UB: ["上半身B", "上B"], LB: ["下半身B", "下B"] };
+  const ALL_KEYS = [...Object.keys(MENU_LABELS), "A", "B", "C"];
+  const menuBadge = (k) => (MENU_LABELS[k] ? MENU_LABELS[k][1] : k);
+  const menuName = (k) => (MENU_LABELS[k] ? MENU_LABELS[k][0] : `メニュー${k}`);
   const CARDIO_EX = ["treadmill", "bike"]; // 有酸素に使うマシン（前から順に）
 
   // 筋トレの日の内容（14日以上あいた時は重さを軽くする）
@@ -1248,17 +1289,17 @@ button { cursor: pointer; }
   const MINUTES = [45, 60, 75, 90];
   const REST_SEC = { multi: 150, single: 75, abs: 75 }; // 休憩：多関節2分30秒、腹筋・単関節1分15秒
   const MIN_PER = { multi: 1 + REST_SEC.multi / 60, single: 1 + REST_SEC.single / 60, abs: 0.75 + REST_SEC.abs / 60 }; // 1セット＋休憩の分
-  const CARDIO_DAY = [20, 20]; // 有酸素だけの日の目安（分）
   // 毎日の早歩き：時間と速さで指示（10分でだいたい1,100〜1,200歩）
   const WALK = { min: 10, speed: "時速5.5〜6km", pace: "1分に110〜120歩・少し息が上がる速さ" };
 
   // ── 状態 ──
   const SETTINGS_VER = 4; // 4: チョコザップの12台（器具の設定はそのまま使う）
-  const defaultSettings = () => ({ v: SETTINGS_VER, minutes: 60, equip: Object.fromEntries(EQUIP.map((q) => [q.id, true])) });
+  const defaultSettings = () => ({ v: SETTINGS_VER, minutes: 60, course: "belly", equip: Object.fromEntries(EQUIP.map((q) => [q.id, true])) });
   const savedSettings = load(LS.settings, {});
   const settings = savedSettings.v === SETTINGS_VER ? Object.assign(defaultSettings(), savedSettings) : defaultSettings();
   settings.equip = Object.fromEntries(EQUIP.map((q) => [q.id, settings.equip[q.id] !== false]));
   if (!MINUTES.includes(settings.minutes)) settings.minutes = 60;
+  if (!COURSES[settings.course]) settings.course = "belly";
   Object.assign(LS, { off: "cz_off", walk: "cz_walk", body: "cz_body", nudge: "cz_nudge" });
   let logs = load(LS.logs, []);
   let cur = load(LS.current, null);
@@ -1320,13 +1361,14 @@ button { cursor: pointer; }
   function lastFull(beforeIso) {
     for (let i = logs.length - 1; i >= 0; i--) {
       const s = logs[i];
-      if (s.v >= 3 && s.date < beforeIso && KEYS.includes(s.day) && !s.light && sessionType(s) === "strength") return s; // 前の版（A/Bの分割法）の記録は数えない
+      if (s.v >= 3 && s.date < beforeIso && ALL_KEYS.includes(s.day) && !s.light && sessionType(s) === "strength") return s; // 前の版（A/Bの分割法）の記録は数えない
     }
     return null;
   }
   function nextKey() {
     const last = lastFull("9999-12-31");
-    return last ? KEYS[(KEYS.indexOf(last.day) + 1) % 3] : KEYS[0];
+    const keys = Object.keys(course().menus);
+    return last ? keys[(keys.indexOf(last.day) + 1) % keys.length] : keys[0]; // 別のコースのメニューだったら最初から
   }
   // 前回の筋トレの日（その日より前）
   function lastStrengthDay(beforeIso) {
@@ -1348,23 +1390,27 @@ button { cursor: pointer; }
     for (let d = formatDateISO(mondayOf(isoToDate(iso))); d < iso; d = isoAdd(d, 1)) if (fn(d)) n++;
     return n;
   }
-  // その日の種類を決める。1週間で 筋トレ3日・有酸素だけの日1〜2日・休み2日 になるように
-  //   予定どおりなら 月 上半身 → 火 有酸素 → 水 休み → 木 下半身 → 金 全身 → 土 有酸素（任意）→ 日 休み
+  // その日の種類を決める（コースの週の日数どおりになるように。サボった日や行けない日があれば、その先をずらす）
+  //   腹回り：月 上半身 → 火 有酸素 → 水 休み → 木 下半身 → 金 全身 → 土 有酸素（任意）→ 日 休み
   function planFor(iso) {
+    const co = course();
     if (offDays[iso]) return { type: "off", why: "今日は行けない日。自宅で歩きましょう" };
     const y = isoAdd(iso, -1);
     const active6 = [1, 2, 3, 4, 5, 6].filter((k) => activeOn(isoAdd(iso, -k))).length;
-    if (active6 >= 5) return { type: "rest", why: "直近7日で5日動いたので休み" };
-    if (cardioOnlyOn(y)) return { type: "rest", why: "昨日は有酸素。今日は休み" };
+    if (active6 >= co.activeMax) return { type: "rest", why: `直近7日で${co.activeMax}日動いたので休み` };
+    if (co.restAfterCardio && cardioOnlyOn(y)) return { type: "rest", why: "昨日は有酸素。今日は休み" };
     const ws = weekCount(iso, strengthOn);
     const wc = weekCount(iso, cardioOnlyOn);
+    let run = 0; // 昨日まで何日続けて筋トレしたか
+    while (run < 7 && strengthOn(isoAdd(iso, -1 - run))) run++;
+    const cardio = { type: "cardio", why: run ? "昨日は筋トレ。今日は有酸素の日" : "今週の有酸素の日" };
     const extra = { type: "cardio", optional: true, why: "疲れていなければ有酸素" };
-    if (strengthOn(y)) {
-      if (strengthOn(isoAdd(iso, -2))) return wc ? extra : { type: "cardio", why: "筋トレが2日続いたので有酸素の日" };
-      if (!wc) return { type: "cardio", why: "昨日は筋トレ。今日は有酸素の日" };
-    }
-    if (ws < 3) return { type: "strength", ...strengthMode(iso) };
-    return wc ? { type: "rest", why: "今週の分はできました。休み" } : { type: "cardio", why: "今週はまだ有酸素の日がないので" };
+    const rest = { type: "rest", why: "今週の分はできました。休み" };
+    if (run >= co.consec) return wc < co.C ? { ...cardio, why: `筋トレが${run}日続いたので有酸素の日` } : co.extra && ws >= co.S ? extra : ws < co.S ? (co.restAfterCardio ? rest : extra) : rest;
+    if (run && co.cardioEarly && wc === 0 && co.C > 0) return cardio;
+    if (ws < co.S) return { type: "strength", ...strengthMode(iso) };
+    if (wc < co.C) return cardio;
+    return rest;
   }
   // インターバルにしてよいか：直近7日でまだしていない（有酸素の日の翌日は休みなので、そのまま回復にあてられる）
   const intervalOK = (iso) => !logs.some((s) => s.interval && s.date > isoAdd(iso, -7) && s.date <= iso);
@@ -1380,7 +1426,7 @@ button { cursor: pointer; }
   const doneOn = (iso) => new Set(logs.filter((s) => s.date === iso).flatMap((s) => s.items.map((it) => it.exId)));
   const usable = (ex) => !ex.equip || !!settings.equip[ex.equip];
   // 前の版の作りかけメニューや、今はもう使わない種目・使えないマシンが入ったメニューは作り直す
-  const staleCur = (c) => !c || c.ver !== 6 || c.items.some((it) => !EX[it.exId] || EX[it.exId].old || !usable(EX[it.exId]));
+  const staleCur = (c) => !c || c.ver !== 6 || (c.course || "belly") !== settings.course || c.items.some((it) => !EX[it.exId] || EX[it.exId].old || !usable(EX[it.exId]));
   if (staleCur(cur)) cur = null;
 
   // ── 前回を少しでも上回る目標 ──
@@ -1394,7 +1440,7 @@ button { cursor: pointer; }
     const h = perfHistory(ex.id, 1)[0];
     const mk = (w, reps, text, up = false) => ({ w, reps: Array.from({ length: nSets }, (_, j) => reps[Math.min(j, reps.length - 1)]), text, up });
     if (!h) {
-      const r0 = ex.unit === "sec" ? 20 : ex.part === "abs" ? 12 : ex.acc ? 12 : 10;
+      const r0 = ex.unit === "sec" ? 20 : ex.part === "abs" ? 12 : ex.acc ? 12 : Math.max(lo, Math.min(10, hi - 2));
       return weighted(ex)
         ? mk(ex.start, [r0], `初めて：<b>${fmtKg(ex.start)}kg</b> × ${r0}${u} から`)
         : mk(null, [ex.unit === "sec" ? 20 : 10], "初めて：できる範囲で。フォームを優先");
@@ -1428,7 +1474,9 @@ button { cursor: pointer; }
     const cands = slot.ex.map((id) => EX[id]).filter((e) => usable(e) && !taken.has(e.id));
     return cands.find((e) => !avoid.has(e.id)) || cands[0] || null;
   }
-  function makeItem(ex, part, role, nSets, optional) {
+  function makeItem(ex0, part, role, nSets, optional) {
+    const rng = course().range;
+    const ex = rng && weighted(ex0) && !ex0.acc && ex0.part !== "abs" ? { ...ex0, range: rng } : ex0; // コースの回数の目安を使う
     const t = target(ex, nSets);
     return {
       exId: ex.id, part, role, optional: !!optional,
@@ -1458,7 +1506,7 @@ button { cursor: pointer; }
       mode = sm.mode;
       if (override) why = sm.why;
       key = nextKey();
-      const menu = MENUS[key];
+      const menu = course().menus[key];
       const taken = new Set();
       menu.slots.forEach((slot) => {
         const ex = pickFor(slot, new Set(), taken);
@@ -1469,7 +1517,7 @@ button { cursor: pointer; }
       // 筋トレ後の有酸素。時間が足りない日は休憩ではなく、有酸素→腹筋の順に削る
       const limit = settings.minutes + 5;
       const room = Math.floor((limit - strengthMinutes(items)) / 5) * 5;
-      if (room < menu.cardio[0]) {
+      if (!menu.cardio) { /* 筋トレ後の有酸素なし */ } else if (room < menu.cardio[0]) {
         notes.push(`${settings.minutes}分に収めるため、筋トレ後の有酸素は省略`);
         const abs = items.find((it) => it.role === "abs");
         const absBase = abs ? abs.sets.length : 0;
@@ -1478,12 +1526,12 @@ button { cursor: pointer; }
         else if (abs && abs.sets.length < absBase) notes.push(`腹筋は${abs.sets.length}セットに`);
       } else items.push(cardioItem([menu.cardio[0], Math.min(menu.cardio[1], room)], "cardio"));
     } else if (type === "cardio") {
-      items.push(cardioItem(CARDIO_DAY, "cardio-day"));
+      items.push(cardioItem(course().cardioDay, "cardio-day"));
     } else if (type === "off") {
       items.push(cardioItem([20, 30], "home", "home_walk"));
     }
     const optional = !override && type === "cardio" && !!auto.optional; // 疲れていなければやる日
-    return { ver: 6, date: today, createdAt: Date.now(), startedAt: null, type, override: override || null, optional, why, day: key, mode, items, notes, intervalOK: type === "cardio" && intervalOK(today), interval: false };
+    return { ver: 6, course: settings.course, date: today, createdAt: Date.now(), startedAt: null, type, override: override || null, optional, why, day: key, mode, items, notes, intervalOK: type === "cardio" && intervalOK(today), interval: false };
   }
 
   const anyDone = () => !!cur && cur.items.some((it) => it.sets.some((x) => x.done));
@@ -1541,7 +1589,7 @@ button { cursor: pointer; }
     const it = cur.items[i];
     const ex = EX[it.exId];
     const pool = it.part === "cardio" ? CARDIO_EX.map((id) => EX[id]).filter(usable)
-      : [...new Set(KEYS.flatMap((k) => MENUS[k].slots).filter((s) => s.part === it.part).flatMap((s) => s.ex))]
+      : [...new Set(Object.values(course().menus).flatMap((m) => m.slots).filter((s) => s.part === it.part).flatMap((s) => s.ex))]
         .map((id) => EX[id]).filter((e) => usable(e) && (e.id === ex.id || !cur.items.some((x) => x.exId === e.id)));
     if (pool.length < 2) { toast(`ほかに入れ替えられる${PART_NAMES[it.part]}の種目がありません`); return; }
     const next = pool[(pool.findIndex((e) => e.id === ex.id) + 1) % pool.length];
@@ -1899,13 +1947,13 @@ button { cursor: pointer; }
     const days = weekPlan(weekOff).map((w) => {
       const isS = w.type === "strength";
       const k = isS ? (w.day ? menuBadge(w.day) : "筋") : w.type === "cardio" ? "有" : w.type === "rest" ? "休" : w.type === "off" ? "家" : "—";
-      const label = isS ? (MENUS[w.day] ? MENUS[w.day].name.replace("＋腹", "") : "筋トレ") : w.type === "cardio" && w.optional ? "任意" : WP_LABEL[w.type] || "";
+      const label = isS ? (MENU_LABELS[w.day] ? menuName(w.day).replace("＋腹", "") : "筋トレ") : w.type === "cardio" && w.optional ? "任意" : WP_LABEL[w.type] || "";
       const dt = isoToDate(w.d);
       const cls = [`t-${w.type}`, w.optional ? "opt" : "", w.d === today ? "wp-today" : w.d < today ? "past" : ""].join(" ");
       return `<li class="wp ${cls}"><span class="wp-dow">${DOW[dt.getDay()]}</span><span class="wp-date">${dt.getDate()}</span><b class="wp-k">${k}${w.done ? "<i>✓</i>" : ""}</b><small>${label}</small></li>`;
     }).join("");
     return `<div class="wplan">
-        <div class="wp-head"><b>${weekOff ? "来週" : "今週"}の予定</b><button type="button" class="mini" data-act="wp-week">${weekOff ? "‹ 今週" : "来週 ›"}</button></div>
+        <div class="wp-head"><b>${weekOff ? "来週" : "今週"}の予定<small class="wp-course">${course().name}</small></b><button type="button" class="mini" data-act="wp-week">${weekOff ? "‹ 今週" : "来週 ›"}</button></div>
         <ol class="wp-days">${days}</ol>
       </div>`;
   }
@@ -2260,18 +2308,61 @@ button { cursor: pointer; }
   }
 
   // ── 描画：設定 ──
+  // コースの1週間の例（何も記録がない状態から、予定どおりに進めた場合）
+  function courseWeek(id) {
+    const saved = [settings.course, logs, offDays];
+    settings.course = id;
+    logs = [];
+    offDays = {};
+    const out = [];
+    try {
+      const mon = "2030-01-07"; // 月曜日
+      for (let k = 0; k < 7; k++) {
+        const d = isoAdd(mon, k);
+        const p = planFor(d);
+        if (p.type === "strength") p.day = nextKey();
+        out.push(p);
+        if (!p.optional && (p.type === "strength" || p.type === "cardio")) logs.push({ v: 6, date: d, type: p.type, day: p.day, items: [] });
+      }
+    } finally { [settings.course, logs, offDays] = saved; }
+    return out;
+  }
+  let courseOpen = null; // ▼で中身を開いているコース
+  const rangeText = (r) => `${r[0]}${r[1] > r[0] ? `〜${r[1]}` : ""}`;
+  function courseHTML(id) {
+    const co = COURSES[id];
+    const on = settings.course === id;
+    const open = courseOpen === id;
+    const wk = courseWeek(id);
+    const cnt = (f) => wk.filter(f).length;
+    const sum = `筋トレ${cnt((p) => p.type === "strength")}・有酸素${cnt((p) => p.type === "cardio" && !p.optional)}${cnt((p) => p.optional) ? `（＋任意${cnt((p) => p.optional)}）` : ""}・休み${cnt((p) => p.type === "rest")}`;
+    const exName = (sl) => esc(EX[sl.ex[0]].name);
+    const body = !open ? "" : `<div class="crs-body">
+        <ol class="wp-days crs-week">${wk.map((p, k) => {
+          const isS = p.type === "strength";
+          return `<li class="wp t-${p.type}${p.optional ? " opt" : ""}"><span class="wp-dow">${DOW[(k + 1) % 7]}</span><b class="wp-k">${isS ? menuBadge(p.day) : p.type === "cardio" ? "有" : "休"}</b></li>`;
+        }).join("")}</ol>
+        <ul class="menu-def">${Object.entries(co.menus).map(([k, m]) => `<li><b>${menuBadge(k)}</b><span><em>${menuName(k)}</em>${m.slots.map((x) => `${exName(x)}×${x.sets}`).join("／")}${m.cardio ? `／有酸素${rangeText(m.cardio)}分` : ""}</span></li>`).join("")}
+          <li><b>有</b><span><em>有酸素だけの日</em>${EX.treadmill.name} 速度${EX.treadmill.speed[0][1]}・傾斜${EX.treadmill.speed[1][1]}／${rangeText(co.cardioDay)}分</span></li></ul>
+        ${co.range ? `<p class="crs-note">重さは${co.range[0]}〜${co.range[1]}回できる重さで</p>` : ""}
+      </div>`;
+    return `<div class="crs${on ? " on" : ""}">
+        <div class="crs-row"><button type="button" class="crs-pick" data-act="course" data-v="${id}" aria-pressed="${on}"><i class="crs-dot"></i><span><b>${co.name}</b><small>${sum}</small></span></button>
+          <button type="button" class="crs-more" data-act="course-more" data-v="${id}" aria-expanded="${open}" aria-label="${co.name}の中身">${open ? "▲" : "▼"}</button></div>
+        ${body}
+      </div>`;
+  }
   function renderSettings() {
     ensureToday();
     const mc = EQUIP.map((q) => `<label class="mc"><input type="checkbox" data-act="equip" data-v="${q.id}"${settings.equip[q.id] ? " checked" : ""}>${thumbHTML(q.icon)}<span class="mc-tick">${CHECK_SVG}</span><span class="mc-name">${q.no} ${esc(q.name)}</span></label>`).join("");
-    const menus = KEYS.map((k) => `<li><b>${MENUS[k].badge}</b><span><em>${MENUS[k].name}</em>${MENUS[k].slots.map((sl) => `${esc(EX[sl.ex[0]].name.replace(/（.*）/, ""))}×${sl.sets}`).join("／")}／有酸素${MENUS[k].cardio[0]}${MENUS[k].cardio[1] > MENUS[k].cardio[0] ? `〜${MENUS[k].cardio[1]}` : ""}分</span></li>`).join("")
-      + `<li><b>有</b><span><em>有酸素だけの日</em>${EX.treadmill.name} 速度${EX.treadmill.speed[0][1]}・傾斜${EX.treadmill.speed[1][1]}／${CARDIO_DAY[0]}分</span></li>`;
+    const courses = COURSE_IDS.map(courseHTML).join("");
     const auto = planFor(todayIso());
     const dtypes = [["auto", `自動（${DAY_TYPES[auto.type]}）`], ["strength", "筋トレ"], ["cardio", "有酸素"], ["rest", "休む"]]
       .map(([k, label]) => chip("dtype", k, label, k === "auto" ? !cur.override : cur.override === k)).join("");
     const perm = "Notification" in window ? Notification.permission : "unsupported";
     $("#view-settings").innerHTML = `
       <div class="card"><h3>今日の内容</h3><div class="chips">${dtypes}</div></div>
-      <div class="card"><h3>メニュー（上半身→下半身→全身の順）</h3><ul class="menu-def">${menus}</ul></div>
+      <div class="card"><h3>コース</h3><div class="courses">${courses}</div></div>
       <div class="card"><h3>1回の時間</h3><div class="chips">${MINUTES.map((m) => chip("minutes", m, `<span class="n">${m}</span>分`, settings.minutes === m)).join("")}</div></div>
       <div class="card"><h3>通知（休憩の終わり・早歩き）</h3>
         ${perm === "granted" ? '<p class="fine">✓ オン</p>' : perm === "unsupported" ? '<p class="fine">この画面では通知を使えません（アプリ版で使えます）</p>' : `<button type="button" class="btn" data-act="notify-on">通知をオンにする</button>`}</div>
@@ -2430,6 +2521,20 @@ button { cursor: pointer; }
         requestRegen(() => { settings.equip[v] = !settings.equip[v]; saveSettings(); });
         break;
       }
+      case "course": {
+        const v = t.dataset.v;
+        if (settings.course === v) break;
+        settings.course = v;
+        saveSettings();
+        if (anyDone()) toast("今日の記録を終えると切り替わります");
+        else { rebuild(null); toast(`コース：${COURSES[v].name}`); }
+        renderSettings();
+        break;
+      }
+      case "course-more":
+        courseOpen = courseOpen === t.dataset.v ? null : t.dataset.v;
+        renderSettings();
+        break;
       case "minutes":
         if (tab === "settings") { settings.minutes = Number(t.dataset.v); settingsChanged(); renderSettings(); break; }
         requestRegen(() => { settings.minutes = Number(t.dataset.v); saveSettings(); });
