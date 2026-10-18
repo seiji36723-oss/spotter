@@ -593,6 +593,7 @@ button { cursor: pointer; }
   font-family: var(--font-num); font-weight: 700; font-size: 13px; line-height: 1.1;
 }
 .eq-tile svg { width: 100%; max-width: 44px; aspect-ratio: 1; }
+.eq-tile span.sn { font-family: inherit; font-size: 10px; white-space: nowrap; letter-spacing: -.02em; }
 .eq-tile[aria-pressed="false"] { border-color: var(--line); border-style: dashed; color: var(--faint); }
 .eq-tile[aria-pressed="false"] svg { opacity: .35; }
 .eq-tile[aria-pressed="false"]::after {
@@ -984,6 +985,17 @@ button { cursor: pointer; }
   // 絵のタイル。inner はタイルの上に重ねる印（順番の番号など）
   const thumbHTML = (key, inner = "") => `<span class="thumb">${pictoSVG(key)}${inner}</span>`;
   // フリーウェイト・ケーブルの種目の絵
+  // ミラフィットネス・エニタイムのマシンの絵
+  Object.assign(PICTO, {
+    // レッグエクステンション（座って膝を伸ばす）
+    leg_ext: P_TOWER + P_BACK + P_SEAT + P_HEAD(25, 12) + P_BODY("M24 21v19") + P_LIMB("M25 41h12l13-5") + P_MAC("M37 46l13-7", 3) + `<circle cx="51" cy="36" r="3.4" fill="currentColor" stroke="none"/>`,
+    // レッグカール（座って膝を曲げる）
+    leg_curl: P_TOWER + P_BACK + P_SEAT + P_HEAD(25, 12) + P_BODY("M24 21v19") + P_LIMB("M25 41h12l-3 13") + P_MAC("M38 39h12", 4) + `<circle cx="38" cy="55" r="3.4" fill="currentColor" stroke="none"/>`,
+    // ペクトラルフライ（正面・腕を前で閉じる）
+    pec_fly: P_FRONT("M29 41l-2 15M35 41l2 15") + P_LIMB("M28 25l-12-1 6-9M36 25l12-1-6-9") + P_MAC("M18 6v12M46 6v12", 4),
+    // エリプティカル（立って脚を前後に）
+    elliptical: P_MAC("M8 57h44", 3) + P_MAC("M44 10l-4 47", 3) + P_HEAD(26, 10) + P_BODY("M26 19v17") + P_LIMB("M27 22l10 6 5-12M25 37l-6 15M27 37l9 13") + P_MAC("M14 52h10M32 50h10", 3),
+  });
   const P_PLATE = (x, y, r = 5) => `<circle cx="${x}" cy="${y}" r="${r}" stroke-width="2.5"/><circle cx="${x}" cy="${y}" r="1.4" fill="currentColor" stroke="none"/>`;
   const P_DB = (d) => P_MAC(d, 4.5); // ダンベル（短い太線）
   Object.assign(PICTO, {
@@ -1112,6 +1124,17 @@ button { cursor: pointer; }
   }
   // 全身法の種目で使う筋肉
   Object.assign(EX_MUSCLES, {
+    leg_extension: { main: ["quads"], sub: [] },
+    leg_curl: { main: ["hamstrings"], sub: ["calves"] },
+    pec_fly: { main: ["chest"], sub: ["delts"] },
+    rear_delt: { main: ["delts"], sub: ["traps"] },
+    triceps_ext: { main: ["triceps"], sub: [] },
+    back_ext: { main: ["lowerback"], sub: ["glutes", "hamstrings"] },
+    torso: { main: ["obliques"], sub: ["abs"] },
+    glute_machine: { main: ["glutes"], sub: ["hamstrings"] },
+    calf_raise: { main: ["calves"], sub: [] },
+    smith_squat: { main: ["quads", "glutes"], sub: ["hamstrings", "adductors"] },
+    smith_bench: { main: ["chest"], sub: ["triceps", "delts"] },
     leg_press_high: { main: ["glutes", "hamstrings"], sub: ["quads"] },
     chest_press_low: { main: ["chest", "delts"], sub: ["triceps"] },
     lat_pull_narrow: { main: ["lats", "traps"], sub: ["biceps", "delts"] },
@@ -1137,7 +1160,8 @@ button { cursor: pointer; }
   const WEEK_TARGET = [9, 12]; // 各部位 週9〜12セット
   const PART_NAMES = { ...PARTS, abs: "お腹", cardio: "有酸素" }; // 記録の表示用（前の版の種目も含む）
 
-  // ── 器具：チョコザップの12台（①〜⑫はマシンに書いてある番号）。故障中・混んでいる台は外すと代わりの種目に ──
+  // ── ジムと器具。provides：その器具でできること（種目の equip と同じ名前）。故障中・混んでいる台は外すと代わりの種目に ──
+  // チョコザップの①〜⑫はマシンに書いてある番号。ミラフィットネス・エニタイムは店舗によって置いてある器具が違うので、ない器具は外す
   const EQUIP = [
     { id: "shoulder_press", no: "①", name: "ショルダープレス" },
     { id: "chest_press", no: "②", name: "チェストプレス" },
@@ -1152,8 +1176,56 @@ button { cursor: pointer; }
     { id: "treadmill", no: "⑪", name: "トレッドミル" },
     { id: "bike", no: "⑫", name: "バイク" },
   ];
-  EQUIP.forEach((q) => { q.icon = q.id; });
+  EQUIP.forEach((q) => { q.icon = q.id; q.provides = [q.id]; q.short = q.no; });
   const MACHINE_NO = Object.fromEntries(EQUIP.map((q) => [q.id, q.no]));
+  // [id, 名前, 短い名前, 絵, できること]
+  const gymItems = (list) => list.map(([id, name, short, icon, provides]) => ({ id, name, short, icon, provides }));
+  const GYMS = {
+    choco: { name: "チョコザップ", items: EQUIP },
+    mira: { name: "ミラフィットネス", items: gymItems([
+      ["m_multi", "マルチプレス（胸・肩）", "マルチ", "chest_press", ["chest_press", "shoulder_press"]],
+      ["m_pull", "ラットプルダウン／シーテッドロー", "プル", "lat_pull", ["lat_pull", "row"]],
+      ["m_abback", "アブ／ローバック", "アブ", "ab_trainer", ["ab_trainer", "back_ext"]],
+      ["m_torso", "ロータリートルソー", "トルソー", "ab_trainer", ["torso"]],
+      ["m_legpress", "レッグプレス／カーフプレス", "レッグ", "leg_press", ["leg_press", "calf"]],
+      ["m_legext", "レッグエクステンション／カール", "エクステ", "leg_ext", ["leg_ext", "leg_curl"]],
+      ["m_hip", "ヒップアブダクター／アダクター", "ヒップ", "adductor", ["adductor", "abductor"]],
+      ["m_fly", "ペクトラルフライ／リアデルト", "フライ", "pec_fly", ["pec_fly", "rear_delt"]],
+      ["m_arm", "バイセップ／トライセップ", "アーム", "biceps_curl", ["biceps_curl", "triceps"]],
+      ["m_glute", "グルート", "グルート", "abductor", ["glute"]],
+      ["m_cable", "ファンクショナルトレーナー（ケーブル）", "ケーブル", "triceps_pushdown", ["cable", "row"]],
+      ["m_smith", "スミスマシン", "スミス", "squat", ["smith"]],
+      ["m_rack", "ハーフラック", "ラック", "squat", ["rack"]],
+      ["m_db", "ダンベル", "ダンベル", "arm_curl", ["dumbbell"]],
+      ["m_bench", "ベンチ", "ベンチ", "ab_bench", ["bench", "ab_bench"]],
+      ["m_tread", "トレッドミル", "トレッド", "treadmill", ["treadmill"]],
+      ["m_bike", "ハイブリッドバイク", "バイク", "bike", ["bike"]],
+      ["m_ellip", "エリプティカル", "エリプ", "elliptical", ["elliptical"]],
+    ]) },
+    any: { name: "エニタイム", items: gymItems([
+      ["a_chest", "チェストプレス", "チェスト", "chest_press", ["chest_press"]],
+      ["a_shoulder", "ショルダープレス", "ショルダー", "shoulder_press", ["shoulder_press"]],
+      ["a_pull", "ラットプルダウン／シーテッドロウ", "プル", "lat_pull", ["lat_pull", "row"]],
+      ["a_legpress", "レッグプレス", "レッグ", "leg_press", ["leg_press", "calf"]],
+      ["a_legext", "レッグエクステンション／カール", "エクステ", "leg_ext", ["leg_ext", "leg_curl"]],
+      ["a_fly", "ペックフライ／リアデルト", "フライ", "pec_fly", ["pec_fly", "rear_delt"]],
+      ["a_ab", "アブドミナル", "アブ", "ab_trainer", ["ab_trainer"]],
+      ["a_hip", "アダクター／アブダクター", "ヒップ", "adductor", ["adductor", "abductor"]],
+      ["a_cable", "ケーブル（TORQUE）", "ケーブル", "triceps_pushdown", ["cable", "row"]],
+      ["a_smith", "スミスマシン", "スミス", "squat", ["smith"]],
+      ["a_rack", "パワーラック／ハーフラック", "ラック", "squat", ["rack"]],
+      ["a_db", "ダンベル", "ダンベル", "arm_curl", ["dumbbell"]],
+      ["a_bench", "ベンチ", "ベンチ", "ab_bench", ["bench", "ab_bench"]],
+      ["a_tread", "トレッドミル", "トレッド", "treadmill", ["treadmill"]],
+      ["a_bike", "バイク", "バイク", "bike", ["bike"]],
+      ["a_cross", "クロストレーナー", "クロス", "elliptical", ["elliptical"]],
+    ]) },
+  };
+  const GYM_IDS = Object.keys(GYMS);
+  const ALL_EQUIP = GYM_IDS.flatMap((g) => GYMS[g].items);
+  const gymOf = () => GYMS[settings.gym] || GYMS.choco;
+  // マシンの番号（チョコザップだけ）
+  const noOf = (ex) => (settings.gym === "choco" && ex.equip ? MACHINE_NO[ex.equip] || "" : "");
 
   // ── 種目 ──
   // part: 週のセット数を数える部位。equip: 使うマシン（null＝自重）。step: 重さの刻み（チョコザップは5kg）
@@ -1161,7 +1233,7 @@ button { cursor: pointer; }
   const EXERCISES = [
     { id: "leg_press", name: "レッグプレス", part: "legs", equip: "leg_press", start: 70,
       tips: ["背中と腰をシートにつけたまま押す", "膝とつま先の向きをそろえる", "膝を伸ばしきってロックしない"] },
-    { id: "leg_press_high", name: "レッグプレス（足を高め）", part: "legs", equip: "leg_press", start: 30, icon: "leg_press",
+    { id: "leg_press_high", name: "レッグプレス（足を高め）", part: "legs", equip: "leg_press", start: 60, icon: "leg_press",
       tips: ["足をプレートの上のほうに置く", "お尻を引くように深く下ろす", "かかとで押す（お尻・太もも裏に効く）"] },
     { id: "chest_press", name: "チェストプレス", part: "chest", equip: "chest_press", start: 25,
       tips: ["ハンドルが胸の中央の高さにくるようにシートを調整", "背中と頭をパッドにつけたまま押す", "肘は伸ばしきらず、2秒かけて戻す"] },
@@ -1205,28 +1277,52 @@ button { cursor: pointer; }
       tips: ["手すりにつかまらない", "会話がぎりぎりできるくらいの速さ"] },
     { id: "bike", name: "バイク", part: "cardio", equip: "bike", unit: "min", speed: [["負荷", "5", ""], ["回転", "60", "/分"]],
       tips: ["ペダルが一番下のとき膝が軽く曲がるサドルの高さに", "会話がぎりぎりできるくらいの重さ・回転で"] },
+    { id: "elliptical", name: "エリプティカル", part: "cardio", equip: "elliptical", unit: "min", speed: [["負荷", "5", ""], ["回転", "60", "/分"]],
+      tips: ["手すりを軽く握り、背すじを伸ばす", "会話がぎりぎりできるくらいの重さ・回転で"] },
     { id: "home_walk", name: "自宅のまわりで早歩き", part: "cardio", equip: null, unit: "min", icon: "treadmill", speed: [["時速", "5.5〜6", "km"]],
       tips: ["少し息が上がるくらいの速さで", "腕を大きく振る", "続けて30分が無理なら10分×3回でもOK"] },
     // 記録を表示するためだけの種目（メニューには出ない）
     { id: "ab_bench", name: "アブベンチ（腹筋）", part: "abs", equip: null, bw: true, old: true, tips: [] },
-    { id: "squat", name: "スクワット", part: "legs", equip: "barbell", step: 2.5, old: true, tips: [] },
-    { id: "bench", name: "ベンチプレス", part: "chest", equip: "barbell", step: 2.5, old: true, tips: [] },
-    { id: "side_raise", name: "サイドレイズ", part: "shoulder", equip: "dumbbell", step: 1, acc: true, old: true, tips: [] },
-    { id: "rdl", name: "ルーマニアンデッドリフト", part: "legs", equip: "barbell", step: 2.5, old: true, tips: [] },
-    { id: "db_rdl", name: "ダンベルルーマニアンデッドリフト", part: "legs", equip: "dumbbell", step: 1, old: true, tips: [] },
-    { id: "db_shoulder_press", name: "ダンベルショルダープレス", part: "shoulder", equip: "dumbbell", step: 1, old: true, tips: [] },
-    { id: "row", name: "シーテッドロウ", part: "back", equip: "cable", old: true, tips: [] },
-    { id: "db_row", name: "ワンハンドダンベルロウ", part: "back", equip: "dumbbell", step: 1, old: true, tips: [] },
-    { id: "arm_curl", name: "ダンベルカール", part: "arms", equip: "dumbbell", step: 1, acc: true, old: true, tips: [] },
-    { id: "incline_db", name: "インクラインダンベルプレス", part: "chest", equip: "dumbbell", step: 1, old: true, tips: [] },
+    { id: "squat", name: "バーベルスクワット", part: "legs", equip: "rack", step: 2.5, start: 40, tips: ["バーは肩の上（首の付け根）にのせる", "お尻を後ろに引いて、太ももが床と平行まで", "膝とつま先の向きをそろえる"] },
+    { id: "bench", name: "ベンチプレス", part: "chest", equip: "rack", step: 2.5, start: 30, tips: ["肩甲骨を寄せて胸を張る", "バーはみぞおちの少し上に下ろす", "セーフティーバーを胸の高さに"] },
+    { id: "side_raise", name: "サイドレイズ", part: "shoulder", equip: "dumbbell", step: 1, acc: true, start: 4, tips: ["肘を軽く曲げて肩の高さまで上げる", "肩をすくめない", "下ろすときはゆっくり"] },
+    { id: "rdl", name: "ルーマニアンデッドリフト", part: "legs", equip: "rack", step: 2.5, start: 40, tips: ["膝は軽く曲げたまま、お尻を後ろへ引く", "背中を丸めない", "バーは脚に沿わせて下ろす"] },
+    { id: "db_rdl", name: "ダンベルルーマニアンデッドリフト", part: "legs", equip: "dumbbell", step: 1, start: 10, tips: ["膝は軽く曲げたまま、お尻を後ろへ引く", "背中を丸めない", "ダンベルは脚に沿わせて下ろす"] },
+    { id: "db_shoulder_press", name: "ダンベルショルダープレス", part: "shoulder", equip: "dumbbell", step: 1, start: 8, tips: ["背もたれを立てたベンチに座る", "腰を反らさずに真上へ押す", "下ろすときはゆっくり"] },
+    { id: "row", name: "シーテッドロウ", part: "back", equip: "row", start: 30, tips: ["胸を張ったまま、おへそのほうへ引く", "肩甲骨を寄せる", "上半身を反動で倒さない"] },
+    { id: "db_row", name: "ワンハンドダンベルロウ", part: "back", equip: "dumbbell", step: 1, start: 10, tips: ["ベンチに片手と片膝をつく", "背中をまっすぐにして、腰のほうへ引く", "下ろすときはゆっくり"] },
+    { id: "arm_curl", name: "ダンベルカール", part: "arms", equip: "dumbbell", step: 1, acc: true, start: 6, tips: ["肘を体の横で固定する", "反動を使わない", "下ろすときは2秒かけて"] },
+    { id: "incline_db", name: "インクラインダンベルプレス", part: "chest", equip: "dumbbell", step: 1, start: 10, tips: ["ベンチの角度は30度くらい", "肩甲骨を寄せて胸を張る", "胸の横まで下ろす"] },
     { id: "pullup", name: "懸垂", part: "back", equip: "pullup", bw: true, old: true, tips: [] },
-    { id: "triceps_pushdown", name: "トライセプスプッシュダウン", part: "arms", equip: "cable", step: 2.5, acc: true, old: true, tips: [] },
+    { id: "triceps_pushdown", name: "トライセプスプッシュダウン", part: "arms", equip: "cable", step: 2.5, acc: true, start: 15, tips: ["肘を体の横で固定する", "肘から先だけで下へ押す", "戻すときはゆっくり"] },
+    // ミラフィットネス・エニタイムのマシン
+    { id: "leg_extension", name: "レッグエクステンション", part: "legs", equip: "leg_ext", acc: true, start: 25, icon: "leg_ext",
+      tips: ["膝の位置をマシンの回転軸に合わせる", "伸ばしきったところで1秒止める", "ゆっくり戻す"] },
+    { id: "leg_curl", name: "レッグカール", part: "legs", equip: "leg_curl", acc: true, start: 20, icon: "leg_curl",
+      tips: ["膝の位置をマシンの回転軸に合わせる", "かかとをお尻のほうへ引く", "ゆっくり戻す"] },
+    { id: "pec_fly", name: "ペクトラルフライ", part: "chest", equip: "pec_fly", acc: true, start: 20, icon: "pec_fly",
+      tips: ["肘を軽く曲げたまま、胸の前で閉じる", "肩をすくめない", "開くときはゆっくり"] },
+    { id: "rear_delt", name: "リアデルト", part: "shoulder", equip: "rear_delt", acc: true, start: 15, icon: "pec_fly",
+      tips: ["マシンのほうを向いて座る", "肘を伸ばしたまま、腕を後ろへ開く", "肩甲骨は寄せすぎない"] },
+    { id: "triceps_ext", name: "トライセップスエクステンション", part: "arms", equip: "triceps", acc: true, start: 15, icon: "dips",
+      tips: ["肘をパッドに乗せる", "肘から先だけで伸ばす", "ゆっくり戻す"] },
+    { id: "back_ext", name: "ローバック（背中を反らす）", part: "back", equip: "back_ext", acc: true, start: 20, icon: "ab_trainer",
+      tips: ["お腹に力を入れたまま、背中をゆっくり反らす", "反らしすぎない", "ゆっくり戻す"] },
+    { id: "torso", name: "ロータリートルソー（ひねる）", part: "abs", equip: "torso", start: 15, icon: "ab_trainer",
+      tips: ["下半身を固定して、お腹からひねる", "反動を使わない", "左右同じ回数"] },
+    { id: "glute_machine", name: "グルート（お尻）", part: "legs", equip: "glute", acc: true, start: 20, icon: "abductor",
+      tips: ["脚を後ろへ押し出す", "腰を反らさない", "お尻を締める"] },
+    { id: "calf_raise", name: "カーフプレス", part: "legs", equip: "calf", acc: true, start: 40, icon: "leg_press",
+      tips: ["つま先だけをプレートにかける", "かかとを大きく上下させる", "上で1秒止める"] },
+    { id: "smith_squat", name: "スミスマシン スクワット", part: "legs", equip: "smith", step: 2.5, start: 30, icon: "squat",
+      tips: ["足は体より少し前に置く", "お尻を後ろに引いて、太ももが床と平行まで", "膝とつま先の向きをそろえる"] },
+    { id: "smith_bench", name: "スミスマシン ベンチプレス", part: "chest", equip: "smith", step: 2.5, start: 25, icon: "bench",
+      tips: ["バーがみぞおちの少し上に下りる位置にベンチを置く", "肩甲骨を寄せて胸を張る", "ゆっくり下ろす"] },
   ];
   EXERCISES.forEach((e) => {
     e.unit = e.unit || "reps";
     e.step = e.step || 5;
     e.icon = e.icon || e.id;
-    e.no = e.equip ? MACHINE_NO[e.equip] || "" : "";
     e.range = e.unit === "sec" ? [20, 60] : e.part === "abs" ? [10, 20] : e.bw ? [5, 20] : e.acc ? [10, 15] : [8, 12];
     // 休憩の長さの区分：多関節（multi）／単関節（single）／腹筋（abs）／有酸素
     e.kind = e.part === "cardio" ? "cardio" : e.part === "abs" ? "abs" : e.acc ? "single" : "multi";
@@ -1252,6 +1348,10 @@ button { cursor: pointer; }
   const ABS_EX = ["plank", "ab_crunch", "ab_leg_raise"];
   const ABS_CRUNCH = ["ab_crunch", "plank", "ab_leg_raise"];
   const ABS_RAISE = ["ab_leg_raise", "ab_crunch", "plank"];
+  const QUAD = ["leg_extension", "adductor", "bw_squat"]; // 太もも前（なければ内もも）
+  const HAM = ["leg_curl", "abductor", "glute_bridge"]; // 太もも裏（なければお尻の横）
+  const BICEPS = ["biceps_curl", "arm_curl"];
+  const TRICEPS = ["dips", "triceps_ext", "triceps_pushdown"];
   const COURSES = {
     belly: { name: "腹回り", S: 3, C: 1, consec: 2, restAfterCardio: true, cardioEarly: true, extra: true, activeMax: 5, cardioDay: [20, 20],
       menus: {
@@ -1267,15 +1367,15 @@ button { cursor: pointer; }
     mid: { name: "健康とガチの間", S: 3, C: 1, consec: 2, restAfterCardio: true, cardioEarly: true, extra: false, activeMax: 5, cardioDay: [20, 30],
       menus: {
         U: { cardio: [10, 10], slots: [sl("chest", 3, CHEST), sl("back", 3, BACK), sl("shoulder", 3, SHOULDER), sl("abs", 2, ABS_EX)] },
-        L: { cardio: [10, 10], slots: [sl("legs", 3, LEGS), sl("legs", 3, INNER), sl("legs", 3, OUTER), sl("abs", 2, ABS_RAISE)] },
-        F: { cardio: [10, 10], slots: [sl("legs", 3, LEGS), sl("chest", 3, CHEST_LOW), sl("back", 3, BACK_UNDER), sl("abs", 2, ABS_CRUNCH)] },
+        L: { cardio: [10, 10], slots: [sl("legs", 3, LEGS), sl("legs", 3, QUAD), sl("legs", 3, HAM), sl("abs", 2, ABS_RAISE)] },
+        F: { cardio: [10, 10], slots: [sl("legs", 3, LEGS), sl("chest", 3, CHEST_LOW), sl("back", 3, ["row", ...BACK_UNDER]), sl("abs", 2, ABS_CRUNCH)] },
       } },
     hard: { name: "ガチ", S: 4, C: 1, consec: 2, restAfterCardio: false, cardioEarly: false, extra: true, activeMax: 6, cardioDay: [20, 30], range: [6, 10],
       menus: {
-        UA: { cardio: null, slots: [sl("chest", 4, CHEST), sl("back", 4, BACK), sl("shoulder", 3, SHOULDER), sl("arms", 2, ["biceps_curl"]), sl("arms", 2, ["dips"]), sl("abs", 2, ABS_CRUNCH)] },
-        LA: { cardio: null, slots: [sl("legs", 4, LEGS), sl("legs", 3, INNER), sl("legs", 3, OUTER), sl("abs", 3, ABS_RAISE)] },
-        UB: { cardio: null, slots: [sl("chest", 4, CHEST_LOW), sl("back", 4, BACK_UNDER), sl("shoulder", 3, SHOULDER), sl("arms", 2, ["dips"]), sl("arms", 2, ["biceps_curl"]), sl("abs", 2, ABS_EX)] },
-        LB: { cardio: null, slots: [sl("legs", 4, LEGS_HIGH), sl("legs", 3, ["leg_press", "bw_squat"]), sl("legs", 3, INNER), sl("abs", 3, ABS_CRUNCH)] },
+        UA: { cardio: null, slots: [sl("chest", 4, ["bench", "smith_bench", ...CHEST]), sl("back", 4, BACK), sl("shoulder", 3, SHOULDER), sl("arms", 2, BICEPS), sl("arms", 2, TRICEPS), sl("abs", 2, ABS_CRUNCH)] },
+        LA: { cardio: null, slots: [sl("legs", 4, ["squat", "smith_squat", ...LEGS]), sl("legs", 3, QUAD), sl("legs", 3, HAM), sl("abs", 3, ABS_RAISE)] },
+        UB: { cardio: null, slots: [sl("chest", 4, ["incline_db", ...CHEST_LOW]), sl("back", 4, ["row", "db_row", ...BACK_UNDER]), sl("shoulder", 3, ["db_shoulder_press", ...SHOULDER]), sl("arms", 2, TRICEPS), sl("arms", 2, BICEPS), sl("abs", 2, ABS_EX)] },
+        LB: { cardio: null, slots: [sl("legs", 4, LEGS_HIGH), sl("legs", 3, ["rdl", "db_rdl", "leg_press", "bw_squat"]), sl("legs", 3, INNER), sl("abs", 3, ABS_CRUNCH)] },
       } },
   };
   const COURSE_IDS = Object.keys(COURSES);
@@ -1286,7 +1386,7 @@ button { cursor: pointer; }
   const ALL_KEYS = [...Object.keys(MENU_LABELS), "A", "B", "C"];
   const menuBadge = (k) => (MENU_LABELS[k] ? MENU_LABELS[k][1] : k);
   const menuName = (k) => (MENU_LABELS[k] ? MENU_LABELS[k][0] : `メニュー${k}`);
-  const CARDIO_EX = ["treadmill", "bike"]; // 有酸素に使うマシン（前から順に）
+  const CARDIO_EX = ["treadmill", "bike", "elliptical"]; // 有酸素に使うマシン（前から順に）
 
   // 筋トレの日の内容（14日以上あいた時は重さを軽くする）
   const MODES = { normal: { name: "通常" }, back: { name: "久しぶり" } };
@@ -1300,10 +1400,11 @@ button { cursor: pointer; }
 
   // ── 状態 ──
   const SETTINGS_VER = 4; // 4: チョコザップの12台（器具の設定はそのまま使う）
-  const defaultSettings = () => ({ v: SETTINGS_VER, minutes: 60, course: "belly", equip: Object.fromEntries(EQUIP.map((q) => [q.id, true])) });
+  const defaultSettings = () => ({ v: SETTINGS_VER, minutes: 60, course: "belly", gym: "choco", equip: Object.fromEntries(ALL_EQUIP.map((q) => [q.id, true])) });
   const savedSettings = load(LS.settings, {});
   const settings = savedSettings.v === SETTINGS_VER ? Object.assign(defaultSettings(), savedSettings) : defaultSettings();
-  settings.equip = Object.fromEntries(EQUIP.map((q) => [q.id, settings.equip[q.id] !== false]));
+  settings.equip = Object.fromEntries(ALL_EQUIP.map((q) => [q.id, settings.equip[q.id] !== false]));
+  if (!GYMS[settings.gym]) settings.gym = "choco";
   if (!MINUTES.includes(settings.minutes)) settings.minutes = 60;
   if (!COURSES[settings.course]) settings.course = "belly";
   Object.assign(LS, { off: "cz_off", walk: "cz_walk", body: "cz_body", nudge: "cz_nudge" });
@@ -1430,9 +1531,11 @@ button { cursor: pointer; }
     return out;
   }
   const doneOn = (iso) => new Set(logs.filter((s) => s.date === iso).flatMap((s) => s.items.map((it) => it.exId)));
-  const usable = (ex) => !ex.equip || !!settings.equip[ex.equip];
+  // 今のジムで使える器具でできること
+  const caps = () => new Set(gymOf().items.filter((q) => settings.equip[q.id]).flatMap((q) => q.provides));
+  const usable = (ex) => !ex.equip || caps().has(ex.equip);
   // 前の版の作りかけメニューや、今はもう使わない種目・使えないマシンが入ったメニューは作り直す
-  const staleCur = (c) => !c || c.ver !== 6 || (c.course || "belly") !== settings.course || c.items.some((it) => !EX[it.exId] || EX[it.exId].old || !usable(EX[it.exId]));
+  const staleCur = (c) => !c || c.ver !== 6 || (c.course || "belly") !== settings.course || (c.gym || "choco") !== settings.gym || c.items.some((it) => !EX[it.exId] || EX[it.exId].old || !usable(EX[it.exId]));
   if (staleCur(cur)) cur = null;
 
   // ── 前回を少しでも上回る目標 ──
@@ -1537,7 +1640,7 @@ button { cursor: pointer; }
       items.push(cardioItem([20, 30], "home", "home_walk"));
     }
     const optional = !override && type === "cardio" && !!auto.optional; // 疲れていなければやる日
-    return { ver: 6, course: settings.course, date: today, createdAt: Date.now(), startedAt: null, type, override: override || null, optional, why, day: key, mode, items, notes, intervalOK: type === "cardio" && intervalOK(today), interval: false };
+    return { ver: 6, course: settings.course, gym: settings.gym, date: today, createdAt: Date.now(), startedAt: null, type, override: override || null, optional, why, day: key, mode, items, notes, intervalOK: type === "cardio" && intervalOK(today), interval: false };
   }
 
   const anyDone = () => !!cur && cur.items.some((it) => it.sets.some((x) => x.done));
@@ -1840,7 +1943,7 @@ button { cursor: pointer; }
     const head = `<div class="now-head">
         ${thumbHTML(ex.icon)}
         <div class="now-main">
-          <span class="now-step">${PART_NAMES[it.part]}${it.optional ? "（省略可）" : ""}${ex.no ? `<span class="mno">${ex.no}番</span>` : ""}<span class="rest-tag">休憩${fmtSec((REST_SEC[ex.kind] || 90) + (it.restExtra || 0))}</span></span>
+          <span class="now-step">${PART_NAMES[it.part]}${it.optional ? "（省略可）" : ""}${noOf(ex) ? `<span class="mno">${noOf(ex)}番</span>` : ""}<span class="rest-tag">休憩${fmtSec((REST_SEC[ex.kind] || 90) + (it.restExtra || 0))}</span></span>
           <span class="now-name">${esc(ex.name)}</span>
           <span class="reps">${reps}</span>
         </div>
@@ -1887,13 +1990,13 @@ button { cursor: pointer; }
     const done = itemDone(it);
     const m = it.sets[0].m;
     const day = it.role === "cardio-day";
-    const pick = it.role === "home" ? "" : `<div class="cpick">${CARDIO_EX.map((id) => EX[id]).filter(usable).map((e) => `<button type="button" class="chip" data-act="cardio-pick" data-i="${i}" data-v="${e.id}" aria-pressed="${e.id === it.exId}">${e.no} ${esc(e.name)}</button>`).join("")}</div>`;
+    const pick = it.role === "home" ? "" : `<div class="cpick">${CARDIO_EX.map((id) => EX[id]).filter(usable).map((e) => `<button type="button" class="chip" data-act="cardio-pick" data-i="${i}" data-v="${e.id}" aria-pressed="${e.id === it.exId}">${noOf(e)} ${esc(e.name)}</button>`).join("")}</div>`;
     const iv = day && cur.intervalOK ? `<button type="button" class="btn${cur.interval ? " primary" : ""}" data-act="interval">${cur.interval ? "✓ インターバルにする" : "インターバルにする（週1回まで）"}</button>` : "";
     const spd = cur.interval && day ? `<span class="spd iv"><b>30秒 速く → 90秒 ゆっくり を 8〜10本</b></span>` : `<span class="spd">${speedHTML(ex.speed)}</span>`;
     const head = `<div class="now-head">
         ${thumbHTML(ex.icon)}
         <div class="now-main">
-          <span class="now-step">${ROLE[it.role]}${day && cur.optional ? "（任意）" : ""}${ex.no ? `<span class="mno">${ex.no}番</span>` : ""}</span>
+          <span class="now-step">${ROLE[it.role]}${day && cur.optional ? "（任意）" : ""}${noOf(ex) ? `<span class="mno">${noOf(ex)}番</span>` : ""}</span>
           <span class="now-name">${esc(ex.name)}</span>
           ${spd}
         </div>
@@ -2005,12 +2108,13 @@ button { cursor: pointer; }
     const bodyNudge = !lastBody || daysBetween(lastBody, today) >= 7 ? `<button type="button" class="nudge link-like" data-act="goto-body">今日は体重を測る日 ›</button>` : "";
     const adv = advice().map((a) => `<p class="adv ${a.kind}">${esc(a.text)}</p>`).join("");
 
-    const eqCount = EQUIP.filter((q) => settings.equip[q.id]).length;
-    const eqTile = (q) => `<button type="button" class="eq-tile" data-act="eq-toggle" data-v="${q.id}" aria-pressed="${!!settings.equip[q.id]}" aria-label="${esc(q.name)}">${pictoSVG(q.icon)}<span>${q.no}</span></button>`;
+    const gItems = gymOf().items;
+    const eqCount = gItems.filter((q) => settings.equip[q.id]).length;
+    const eqTile = (q) => `<button type="button" class="eq-tile" data-act="eq-toggle" data-v="${q.id}" aria-pressed="${!!settings.equip[q.id]}" aria-label="${esc(q.name)}">${pictoSVG(q.icon)}<span${q.no ? "" : ' class="sn"'}>${q.short}</span></button>`;
     const cond = !condOpen ? "" : `<div class="cond">
         <div class="ctl-col"><span class="ctl-label">1回の時間</span><div class="chips">${MINUTES.map((m) => chip("minutes", m, `<span class="n">${m}</span>分`, settings.minutes === m)).join("")}</div></div>
-        <div class="ctl-col"><span class="ctl-label">使える器具 <b>${eqCount}</b>/${EQUIP.length}</span>
-          <div class="eq-grid">${EQUIP.map(eqTile).join("")}</div></div>
+        <div class="ctl-col"><span class="ctl-label">${gymOf().name}の器具 <b>${eqCount}</b>/${gItems.length}</span>
+          <div class="eq-grid">${gItems.map(eqTile).join("")}</div></div>
       </div>`;
 
     const card = (it, i) => (it.part === "cardio" ? cardioCardHTML(it, i) : exCardHTML(it, i));
@@ -2057,7 +2161,7 @@ button { cursor: pointer; }
         <div class="row-btns"><button type="button" class="btn primary" data-act="regen-yes">作り直す</button><button type="button" class="btn ghost" data-act="regen-no">このまま続ける</button></div></div>` : ""}
       ${main}
       ${stepsHTML()}
-      <button type="button" class="opts" data-act="cond" aria-expanded="${condOpen}">${GEAR_SVG}<span>時間 ${settings.minutes}分・器具 ${eqCount}/${EQUIP.length}</span><em>${condOpen ? "閉じる" : "変える"}</em></button>
+      <button type="button" class="opts" data-act="cond" aria-expanded="${condOpen}">${GEAR_SVG}<span>時間 ${settings.minutes}分・${gymOf().name} ${eqCount}/${gItems.length}</span><em>${condOpen ? "閉じる" : "変える"}</em></button>
       ${cond}`;
   }
 
@@ -2365,9 +2469,23 @@ button { cursor: pointer; }
         ${body}
       </div>`;
   }
+  // ジムの欄（左で選ぶ、▼で器具を出してオン・オフ）
+  let gymOpen = null;
+  function gymHTML(id) {
+    const g = GYMS[id];
+    const on = settings.gym === id;
+    const open = gymOpen === id;
+    const n = g.items.filter((q) => settings.equip[q.id]).length;
+    const mc = g.items.map((q) => `<label class="mc"><input type="checkbox" data-act="equip" data-v="${q.id}"${settings.equip[q.id] ? " checked" : ""}>${thumbHTML(q.icon)}<span class="mc-tick">${CHECK_SVG}</span><span class="mc-name">${q.no ? q.no + " " : ""}${esc(q.name)}</span></label>`).join("");
+    return `<div class="crs${on ? " on" : ""}">
+        <div class="crs-row"><button type="button" class="crs-pick" data-act="gym" data-v="${id}" aria-pressed="${on}"><i class="crs-dot"></i><span><b>${g.name}</b><small>器具 ${n}/${g.items.length}</small></span></button>
+          <button type="button" class="crs-more" data-act="gym-more" data-v="${id}" aria-expanded="${open}" aria-label="${g.name}の器具">${open ? "▲" : "▼"}</button></div>
+        ${open ? `<div class="crs-body">${id === "choco" ? "" : '<p class="crs-note">店舗によって置いてある器具が違います。ない器具は外してください</p>'}<div class="machines">${mc}</div></div>` : ""}
+      </div>`;
+  }
   function renderSettings() {
     ensureToday();
-    const mc = EQUIP.map((q) => `<label class="mc"><input type="checkbox" data-act="equip" data-v="${q.id}"${settings.equip[q.id] ? " checked" : ""}>${thumbHTML(q.icon)}<span class="mc-tick">${CHECK_SVG}</span><span class="mc-name">${q.no} ${esc(q.name)}</span></label>`).join("");
+    const gyms = GYM_IDS.map(gymHTML).join("");
     const courses = COURSE_IDS.map(courseHTML).join("");
     const auto = planFor(todayIso());
     const dtypes = [["auto", "自動", DAY_TYPES[auto.type]], ["strength", "筋トレ"], ["cardio", "有酸素"], ["rest", "休む"]]
@@ -2379,7 +2497,7 @@ button { cursor: pointer; }
       <div class="card"><h3>1回の時間</h3><div class="chips">${MINUTES.map((m) => chip("minutes", m, `<span class="n">${m}</span>分`, settings.minutes === m)).join("")}</div></div>
       <div class="card"><h3>通知（休憩の終わり・早歩き）</h3>
         ${perm === "granted" ? '<p class="fine">✓ オン</p>' : perm === "unsupported" ? '<p class="fine">この画面では通知を使えません（アプリ版で使えます）</p>' : `<button type="button" class="btn" data-act="notify-on">通知をオンにする</button>`}</div>
-      <div class="card"><h3>使える器具</h3><div class="machines">${mc}</div></div>
+      <div class="card"><h3>ジムと使える器具</h3><div class="courses">${gyms}</div></div>
       <div class="card"><h3>データ</h3>
         <p class="fine">この端末のブラウザに保存（${logs.length}回分）</p>
         <div class="row-btns"><button type="button" class="btn" data-act="export">記録を書き出す</button><button type="button" class="btn" data-act="import-open">記録を読み込む</button></div>
@@ -2544,6 +2662,21 @@ button { cursor: pointer; }
         renderSettings();
         break;
       }
+      case "gym": {
+        const v = t.dataset.v;
+        if (settings.gym === v) break;
+        settings.gym = v;
+        gymOpen = v;
+        saveSettings();
+        if (anyDone()) toast("今日の記録を終えると切り替わります");
+        else { rebuild(null); toast(`ジム：${GYMS[v].name}`); }
+        renderSettings();
+        break;
+      }
+      case "gym-more":
+        gymOpen = gymOpen === t.dataset.v ? null : t.dataset.v;
+        renderSettings();
+        break;
       case "course-more":
         courseOpen = courseOpen === t.dataset.v ? null : t.dataset.v;
         renderSettings();
@@ -2674,7 +2807,7 @@ button { cursor: pointer; }
         const add = data.logs.filter((x) => x && x.id && x.date && Array.isArray(x.items) && !have.has(x.id));
         logs = logs.concat(add).sort((a, b) => (a.startedAt || 0) - (b.startedAt || 0));
         saveLogs();
-        if (data.settings && data.settings.v === SETTINGS_VER && data.settings.equip) { Object.assign(settings, { equip: data.settings.equip }); saveSettings(); }
+        if (data.settings && data.settings.v === SETTINGS_VER && data.settings.equip) { Object.assign(settings, { equip: { ...settings.equip, ...data.settings.equip } }, GYMS[data.settings.gym] ? { gym: data.settings.gym } : {}); saveSettings(); }
         // 体重、歩数、行けない日も（同じ日は読み込んだほうを使う）
         if (Array.isArray(data.body)) { const m = new Map(body.map((r) => [r.date, r])); data.body.forEach((r) => r && r.date && m.set(r.date, r)); body = [...m.values()]; saveBody(); }
         if (data.walks && typeof data.walks === "object") { walks = { ...walks, ...data.walks }; saveWalks(); }
