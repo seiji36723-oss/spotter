@@ -1272,8 +1272,8 @@ button { cursor: pointer; }
   };
   function gymIconSVG(id, cls = "") {
     const g = GYMS[id];
-    if (id === "all") { // すべての器具：枠の中に4つのます
-      return `<svg class="gym-ic ${cls}" viewBox="0 0 240 240" role="img" aria-label="${g.name}"><path d="M14 14h212v212H14z" fill="none" stroke="currentColor" stroke-width="7"/><path d="M58 58h52v52H58zM130 58h52v52h-52zM58 130h52v52H58zM130 130h52v52h-52z" fill="currentColor"/></svg>`;
+    if (id === "all") { // すべての器具：枠の中に「ALL」
+      return `<svg class="gym-ic ${cls}" viewBox="0 0 240 240" role="img" aria-label="${g.name}"><path d="M14 14h212v212H14z" fill="none" stroke="currentColor" stroke-width="7"/><path fill-rule="evenodd" fill="currentColor" d="M37 160L61 80h18l24 80H84l-5-18H61l-5 18zM65 126h10l-5-22zM111 80h17v64h25v16h-42zM161 80h17v64h25v16h-42z"/></svg>`;
     }
     const [w, h, tr, d] = GYM_ICON[id];
     return `<svg class="gym-ic ${cls}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${g.name}"><g transform="${tr}" fill="currentColor"><path d="${d}"/></g></svg>`;
