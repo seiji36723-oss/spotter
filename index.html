@@ -1883,7 +1883,17 @@ button { cursor: pointer; }
   }
 
   // ── 毎日の早歩き（スタートで10分タイマー。夕方までにしていなければ促す） ──
-  const walkedToday = () => !!walks[todayIso()];
+  // その日の有酸素の分数（記録した分と、今日のメニューで完了にした分）
+  function cardioMinOn(iso) {
+    let m = 0;
+    logs.forEach((s) => { if (s.date === iso) s.items.forEach((it) => { if (it.unit === "min") m += it.sets.reduce((a, x) => a + (x.m || 0), 0); }); });
+    if (cur && cur.date === iso) cur.items.forEach((it) => { if (it.part === "cardio") it.sets.forEach((x) => { if (x.done) m += x.m || 0; }); });
+    return m;
+  }
+  // 早歩き：自分で記録した日か、有酸素を早歩きの分（10分）以上やった日は達成
+  const walkByCardio = (iso) => !walks[iso] && cardioMinOn(iso) >= WALK.min;
+  const walkDoneOn = (iso) => !!walks[iso] || cardioMinOn(iso) >= WALK.min;
+  const walkedToday = () => walkDoneOn(todayIso());
   const walk = { end: 0, id: 0 };
   function startWalk() {
     walk.end = Date.now() + WALK.min * 60000;
@@ -2136,6 +2146,8 @@ button { cursor: pointer; }
     const done = walkedToday();
     const running = walk.end > Date.now();
     const got = walks[todayIso()];
+    const byCardio = walkByCardio(todayIso());
+    if (byCardio) return `<div class="steps done"><div class="st-head"><b>今日の早歩き</b><span class="st-ok">✓ 有酸素${cardioMinOn(todayIso())}分で達成</span></div></div>`;
     return `<div class="steps${done ? " done" : ""}">
         <div class="st-head"><b>今日の早歩き</b>${done ? `<span class="st-ok">✓ ${got === true ? WALK.min : got}分 完了</span>` : ""}</div>
         <div class="wk-main">${running ? `<span class="wk-big"><b id="walkTime">${fmtSec(Math.max(0, Math.round((walk.end - Date.now()) / 1000)))}</b></span>` : ""}
@@ -2374,7 +2386,7 @@ button { cursor: pointer; }
     for (let d = mon; d <= tIso; d = isoAdd(d, 1)) days.push(d);
     const st = days.filter(strengthOn).length;
     const ca = days.filter((d) => typesOn(d).has("cardio")).length;
-    const wd = days.filter((d) => walks[d]).length;
+    const wd = days.filter(walkDoneOn).length;
     return `<div class="wsum">
         <span><b>${st}</b>日<small>筋トレ</small></span>
         <span><b>${ca}</b>日<small>有酸素</small></span>
