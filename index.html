@@ -162,6 +162,11 @@ button { cursor: pointer; }
 .done-today b, .rest-day b { font-size: 17px; }
 .done-today > span, .rest-day > span { font-size: 13px; color: var(--muted); font-weight: 700; }
 .rest-day { border-left: 5px solid var(--ok); }
+.rest-day.skip { border-left-color: var(--muted); }
+.skip-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.skip { display: inline-flex; align-items: center; gap: 5px; padding: 7px 11px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: 12.5px; font-weight: 700; }
+.skip svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.skip.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
 .steps { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow); }
 .st-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .st-head span { font-size: 11.5px; color: var(--muted); }
@@ -963,6 +968,7 @@ button { cursor: pointer; }
     bike: P_MAC("M22 58h28M36 58v-8", 3) + `<circle cx="36" cy="44" r="7" stroke-width="2.5"/>` + P_MAC("M24 28h8M28 29l6 15 10-20M42 21h6", 3)
       + P_HEAD(38, 8) + P_BODY("M28 27l6-12") + P_LIMB("M34 16l9 6M28 28l10 4-2 12M28 28l4 8-3 6"),
     // 自重
+    stepping: P_FLOOR + P_MAC("M30 54V43h22v11", 3.5) + P_HEAD(24, 9) + P_BODY("M24 18v16") + P_LIMB("M24 21l-7 9M25 21l6 8M23 35l-3 18M25 35l10 3v5"),
     bw_squat: P_FLOOR + P_HEAD(28, 11) + P_BODY("M28 19l-4 14") + P_LIMB("M28 22h15M24 34l12 3-3 14h6"),
     knee_pushup: P_FLOOR + P_HEAD(52, 26) + P_BODY("M44 32L25 41") + P_LIMB("M45 32l1 20M25 41l-8 9H7"),
     glute_bridge: P_FLOOR + P_HEAD(9, 47) + P_BODY("M17 49l16-11") + P_LIMB("M33 38l11-5 2 18M17 51h11"),
@@ -1365,6 +1371,8 @@ button { cursor: pointer; }
       tips: ["ペダルが一番下のとき膝が軽く曲がるサドルの高さに", "会話がぎりぎりできるくらいの重さ・回転で"] },
     { id: "elliptical", name: "エリプティカル", part: "cardio", equip: "elliptical", unit: "min", speed: [["負荷", "5", ""], ["回転", "60", "/分"]],
       tips: ["手すりを軽く握り、背すじを伸ばす", "会話がぎりぎりできるくらいの重さ・回転で"] },
+    { id: "stepping", name: "踏み台昇降（家で）", part: "cardio", equip: null, unit: "min", icon: "stepping", speed: [["1分に", "90〜100", "歩"]],
+      tips: ["階段の1段目や、高さ15〜20cmの台を使う", "のぼる・おりるを左右交互に", "少し息が上がるくらいのテンポで"] },
     { id: "home_walk", name: "自宅のまわりで早歩き", part: "cardio", equip: null, unit: "min", icon: "treadmill", speed: [["時速", "5.5〜6", "km"]],
       tips: ["少し息が上がるくらいの速さで", "腕を大きく振る", "続けて30分が無理なら10分×3回でもOK"] },
     // 記録を表示するためだけの種目（メニューには出ない）
@@ -1476,12 +1484,23 @@ button { cursor: pointer; }
   const ALL_KEYS = [...Object.keys(MENU_LABELS), "A", "B", "C"];
   const menuBadge = (k) => (MENU_LABELS[k] ? MENU_LABELS[k][1] : k);
   const menuName = (k) => (MENU_LABELS[k] ? MENU_LABELS[k][0] : `メニュー${k}`);
-  const CARDIO_EX = ["treadmill", "bike", "elliptical"]; // 有酸素に使うマシン（前から順に）
+  const CARDIO_EX = ["treadmill", "bike", "elliptical"];
+  // 雨で行けない日の家でやるメニュー（自重＋踏み台昇降）。セット数はコースに合わせる
+  const HOME_MENU = [["bw_squat", "legs"], ["knee_pushup", "chest"], ["glute_bridge", "legs"], ["plank", "abs"]];
+  const HOME_SETS = { belly: 2, health: 2, mid: 3, hard: 3 }; // 有酸素に使うマシン（前から順に）
 
   // 筋トレの日の内容（14日以上あいた時は重さを軽くする）
   const MODES = { normal: { name: "通常" }, back: { name: "久しぶり" } };
   // 今日の種類
-  const DAY_TYPES = { strength: "筋トレ", cardio: "有酸素", rest: "完全休息", off: "行けない日" };
+  const DAY_TYPES = { strength: "筋トレ", cardio: "有酸素", rest: "完全休息", off: "家でやる" };
+  // 行けない日の種類：rain（雨で行けない→家でやる）／cant（できない→休み）／enough（今日はもういいや→休み）
+  const offKind = (v) => (v === "cant" || v === "enough" ? v : v ? "rain" : null); // 前の版の true は雨と同じ
+  const SKIP_ICON = {
+    rain: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 15a4 4 0 0 1-.4-8A5.5 5.5 0 0 1 17 7.5a3.8 3.8 0 0 1 .2 7.5z"/><path d="M8 18l-1 2.5M12 18l-1 2.5M16 18l-1 2.5"/></svg>',
+    cant: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>',
+    enough: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5v2.5M12 3.5v2.5"/></svg>',
+  };
+  const SKIP_LABEL = { rain: "雨で行けない", cant: "できない", enough: "今日はもういいや" };
   const MINUTES = [45, 60, 75, 90];
   const REST_SEC = { multi: 150, single: 75, abs: 75 }; // 休憩：多関節2分30秒、腹筋・単関節1分15秒
   const MIN_PER = { multi: 1 + REST_SEC.multi / 60, single: 1 + REST_SEC.single / 60, abs: 0.75 + REST_SEC.abs / 60 }; // 1セット＋休憩の分
@@ -1591,7 +1610,10 @@ button { cursor: pointer; }
   //   腹回り：月 上半身 → 火 有酸素 → 水 休み → 木 下半身 → 金 全身 → 土 有酸素（任意）→ 日 休み
   function planFor(iso) {
     const co = course();
-    if (offDays[iso]) return { type: "off", why: "今日は行けない日。自宅で歩きましょう" };
+    const off = offKind(offDays[iso]);
+    if (off === "cant") return { type: "rest", skip: "cant", why: "予定は明日からずらします" };
+    if (off === "enough") return { type: "rest", skip: "enough", why: "予定は明日からずらします" };
+    if (off === "rain") return { type: "off", why: "家でできるメニュー" };
     const y = isoAdd(iso, -1);
     const active6 = [1, 2, 3, 4, 5, 6].filter((k) => activeOn(isoAdd(iso, -k))).length;
     if (active6 >= co.activeMax) return { type: "rest", why: `直近7日で${co.activeMax}日動いたので休み` };
@@ -1727,10 +1749,12 @@ button { cursor: pointer; }
     } else if (type === "cardio") {
       items.push(cardioItem(course().cardioDay, "cardio-day"));
     } else if (type === "off") {
-      items.push(cardioItem([20, 30], "home", "home_walk"));
+      const n = HOME_SETS[settings.course] || 2;
+      HOME_MENU.forEach(([id, part]) => items.push(makeItem(EX[id], part, part === "abs" ? "abs" : "main", n)));
+      items.push(cardioItem([15, 20], "home", "stepping"));
     }
     const optional = !override && type === "cardio" && !!auto.optional; // 疲れていなければやる日
-    return { ver: 6, course: settings.course, gym: settings.gym, date: today, createdAt: Date.now(), startedAt: null, type, override: override || null, optional, why, day: key, mode, items, notes, intervalOK: type === "cardio" && intervalOK(today), interval: false };
+    return { ver: 6, course: settings.course, gym: settings.gym, date: today, createdAt: Date.now(), startedAt: null, type, override: override || null, optional, skip: (!override && auto.skip) || null, why, day: key, mode, items, notes, intervalOK: type === "cardio" && intervalOK(today), interval: false };
   }
 
   const anyDone = () => !!cur && cur.items.some((it) => it.sets.some((x) => x.done));
@@ -2126,7 +2150,7 @@ button { cursor: pointer; }
 
   // ── 1週間の予定。前の日は記録、今日から先は予定どおりに進めた場合のアプリの予定（任意の有酸素はやらない前提） ──
   let weekOff = 0; // 0：今週、1：来週
-  const WP_LABEL = { cardio: "有酸素", rest: "休み", off: "自宅" };
+  const WP_LABEL = { cardio: "有酸素", rest: "休み", off: "家で", skip: "お休み" };
   function weekPlan(off) {
     const today = todayIso();
     const mon = isoAdd(formatDateISO(mondayOf(new Date())), off * 7);
@@ -2140,7 +2164,7 @@ button { cursor: pointer; }
         const done = doneOnDay(d).length > 0;
         if (d === today && done) continue;
         let p;
-        if (d === today) p = { type: cur.type, optional: cur.optional, day: cur.day };
+        if (d === today) p = { type: cur.type, optional: cur.optional, day: cur.day, skip: cur.skip };
         else { p = planFor(d); if (p.type === "strength") p.day = nextKey(); }
         plan[d] = p;
         if (!p.optional && (p.type === "strength" || p.type === "cardio")) logs.push({ v: 6, date: d, type: p.type, day: p.day, items: [] });
@@ -2154,7 +2178,7 @@ button { cursor: pointer; }
         const ty = st ? "strength" : ss.some((s) => sessionType(s) === "cardio") ? "cardio" : "off";
         return { d, type: ty, day: st && st.day, done: true };
       }
-      if (d < today) return { d, type: "none" };
+      if (d < today) return offKind(offDays[d]) === "cant" || offKind(offDays[d]) === "enough" ? { d, type: "skip" } : { d, type: "none" };
       return { d, ...plan[d] };
     });
   }
@@ -2162,7 +2186,8 @@ button { cursor: pointer; }
     const today = todayIso();
     const days = weekPlan(weekOff).map((w) => {
       const isS = w.type === "strength";
-      const k = isS ? (w.day ? menuBadge(w.day) : "筋") : w.type === "cardio" ? "有" : w.type === "rest" ? "休" : w.type === "off" ? "家" : "—";
+      if (w.skip) w.type = "skip";
+      const k = isS ? (w.day ? menuBadge(w.day) : "筋") : w.type === "cardio" ? "有" : w.type === "skip" ? "×" : w.type === "rest" ? "休" : w.type === "off" ? "家" : "—";
       const label = isS ? (MENU_LABELS[w.day] ? menuName(w.day).replace("＋腹", "") : "筋トレ") : w.type === "cardio" && w.optional ? "任意" : WP_LABEL[w.type] || "";
       const dt = isoToDate(w.d);
       const cls = [`t-${w.type}`, w.optional ? "opt" : "", w.d === today ? "wp-today" : w.d < today ? "past" : ""].join(" ");
@@ -2200,8 +2225,9 @@ button { cursor: pointer; }
     const t = cur.type;
     const doneItems = cur.items.filter(itemDone).length;
     const doneToday = logs.some((s) => s.date === today && ["strength", "cardio", "home"].includes(sessionType(s)));
-    const badge = t === "strength" ? menuBadge(cur.day) : t === "cardio" ? "有" : t === "rest" ? "休" : "家";
-    const title = t === "strength" ? `<span class="dh-parts">筋トレ　${menuName(cur.day)}</span>` : `<span class="dh-parts">${t === "cardio" ? "有酸素だけ" : DAY_TYPES[t]}の日</span>`;
+    const badge = t === "strength" ? menuBadge(cur.day) : t === "cardio" ? "有" : cur.skip ? "×" : t === "rest" ? "休" : "家";
+    const title = t === "strength" ? `<span class="dh-parts">筋トレ　${menuName(cur.day)}</span>`
+      : `<span class="dh-parts">${cur.skip ? SKIP_LABEL[cur.skip] : t === "cardio" ? "有酸素だけの日" : t === "off" ? "雨の日・家でやる" : "完全休息の日"}</span>`;
     const tags = [cur.mode && MODES[cur.mode] && cur.mode !== "normal" ? MODES[cur.mode].name : "", cur.optional ? "任意" : "", cur.override ? "手で変更" : ""].filter(Boolean).map((x) => `<span class="dh-mode">${x}</span>`).join("");
     // 夕方になっても歩数が少ない日は、いちばん上で促す
     const walkNudge = now.getHours() >= 17 && !walkedToday() ? `<p class="nudge">夕方です。早歩き${WALK.min}分（${WALK.speed}）がまだです</p>` : "";
@@ -2226,6 +2252,8 @@ button { cursor: pointer; }
       const tm = planFor(isoAdd(today, 1));
       main = `<div class="done-today"><b>✓ 今日の分は記録済み</b><span>明日の予定：${DAY_TYPES[tm.type]}${tm.type === "strength" ? `（${menuName(nextKey())}）` : tm.optional ? "（任意）" : ""}</span>
         <div class="row-btns"><button type="button" class="btn" data-act="see-today">記録を見る</button><button type="button" class="btn ghost" data-act="show-again">もう少しやる</button></div></div>`;
+    } else if (t === "rest" && cur.skip) {
+      main = `<div class="rest-day skip"><b>${cur.skip === "cant" ? "今日はお休み" : "今日はここまで"}</b><span>${cur.skip === "cant" ? "無理せず休みましょう" : "おつかれさま"}</span></div>`;
     } else if (t === "rest") {
       main = `<div class="rest-day"><b>今日は体を休める日</b><span>早歩き${WALK.min}分だけやりましょう</span></div>`;
     } else if (cur.items.length) {
@@ -2246,16 +2274,21 @@ button { cursor: pointer; }
           <span class="jp-n">${isC ? `<b>${it.sets[0].m}</b>分` : `<b>${n}</b>/${it.sets.length}`}</span>
         </button>`;
     }).join("")}</nav>` : "";
-    const offBtn = t === "off" ? `<button type="button" class="mini" data-act="off-undo">やっぱり行ける</button>`
-      : t !== "rest" && !doneToday && !anyDone() ? `<button type="button" class="mini" data-act="off-today">今日は行けない</button>` : "";
+    const off = offKind(offDays[today]);
+    const skipBtn = (k) => `<button type="button" class="skip" data-act="skip" data-v="${k}">${SKIP_ICON[k]}<span>${SKIP_LABEL[k]}</span></button>`;
+    const skipRow = off ? `<div class="skip-row"><span class="skip on">${SKIP_ICON[off]}<span>${SKIP_LABEL[off]}</span></span><button type="button" class="mini" data-act="off-undo">やっぱりやる</button></div>`
+      : doneToday || t === "rest" ? ""
+      : anyDone() ? `<div class="skip-row">${skipBtn("enough")}</div>` // 途中まででやめる → そこまでを記録
+      : `<div class="skip-row">${["rain", "cant", "enough"].map(skipBtn).join("")}</div>`;
 
     $("#view-menu").innerHTML = `
       ${jump}
       <div class="day-hero">
         <div class="dh-row"><span class="dh-date">${now.getMonth() + 1}月${now.getDate()}日（${DOW[now.getDay()]}）</span>${showList ? `<span class="dh-sum"><b>${doneItems}</b>/${cur.items.length} 完了<br>約${menuMinutes()}分${curSets() ? ` · ${curSets()}セット` : ""}</span>` : ""}</div>
-        <div class="dh-title"><b class="key t-${t}">${badge}</b>${title}${tags}</div>
-        <div class="dh-check"><span class="dh-prev">${esc(cur.why)}</span>${offBtn}</div>
+        <div class="dh-title"><b class="key t-${cur.skip ? "off" : t}">${badge}</b>${title}${tags}</div>
+        <div class="dh-check"><span class="dh-prev">${esc(cur.why)}</span></div>
       </div>
+      ${skipRow}
       ${weekPlanHTML()}
       ${walkNudge}${bodyNudge}${adv}
       ${cur.notes && cur.notes.length ? `<ul class="notes">${cur.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
@@ -2684,10 +2717,13 @@ button { cursor: pointer; }
         delete walks[todayIso()];
         saveWalks(); renderMenu();
         break;
-      case "off-today":
-        offDays[todayIso()] = true;
+      case "skip": {
+        const v = t.dataset.v;
+        if (v === "enough" && anyDone()) { finishSession(); toast("ここまでを記録しました"); break; }
+        offDays[todayIso()] = v;
         saveOff(); rebuild(null); renderMenu();
         break;
+      }
       case "off-undo":
         delete offDays[todayIso()];
         saveOff(); rebuild(null); renderMenu();
