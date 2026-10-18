@@ -2101,7 +2101,7 @@ button { cursor: pointer; }
     }));
     const rows = Object.entries(byEx).sort((a, b) => (b[1].at(-1).date > a[1].at(-1).date ? 1 : -1)).slice(0, 8).map(([id, pts]) => {
       const ex = EX[id];
-      const u = weighted(ex) ? "kg" : "回";
+      const u = weighted(ex) ? "kg" : ex.unit === "sec" ? "秒" : "回";
       const a = pts[0].val;
       const z = pts.at(-1).val;
       const best = Math.max(...pts.map((p) => p.val));
