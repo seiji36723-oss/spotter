@@ -580,6 +580,12 @@ button { cursor: pointer; }
 .eq-count { font-size: 13px; color: var(--muted); }
 .eq-count b { font-family: var(--font-num); font-size: 18px; color: var(--ink); margin-right: 1px; }
 .eq-more { margin-left: auto; font-size: 12px; font-weight: 700; border-bottom: 1.5px solid var(--ink); }
+.dt-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.dt-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 2px 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 700; line-height: 1.1; }
+.dt-tile svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dt-tile small { font-size: 10.5px; color: var(--muted); }
+.dt-tile[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.dt-tile[aria-pressed="true"] small { color: var(--bg); opacity: .75; }
 .eq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px; }
 .eq-tile {
   position: relative; display: flex; flex-direction: column; align-items: center; padding: 6px 2px 4px;
@@ -1758,6 +1764,13 @@ button { cursor: pointer; }
   // ── 描画：今日のメニュー ──
   const chip = (act, val, label, on) => `<button type="button" class="chip" data-act="${act}" data-v="${esc(val)}" aria-pressed="${on}">${label}</button>`;
   const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  // 今日の内容のアイコン（自動・筋トレ・有酸素・休む）
+  const DT_ICON = {
+    auto: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 9A8 8 0 0 0 5 7.5M4.5 15A8 8 0 0 0 19 16.5"/><path d="M19.8 4.5V9h-4.5M4.2 19.5V15h4.5"/></svg>',
+    strength: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h2M20 12h2M6.5 7v10M17.5 7v10M4 9v6M20 9v6M6.5 12h11"/></svg>',
+    cardio: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z"/><path d="M3 12.5h4.5l1.8-2.8 2.7 5.3 1.8-2.5H21"/></svg>',
+    rest: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 14.6A8 8 0 1 1 9.4 4.5a6.4 6.4 0 0 0 10.1 10.1z"/></svg>',
+  };
   const GEAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>';
 
   function weightOptions(sel, step) {
@@ -2357,11 +2370,11 @@ button { cursor: pointer; }
     const mc = EQUIP.map((q) => `<label class="mc"><input type="checkbox" data-act="equip" data-v="${q.id}"${settings.equip[q.id] ? " checked" : ""}>${thumbHTML(q.icon)}<span class="mc-tick">${CHECK_SVG}</span><span class="mc-name">${q.no} ${esc(q.name)}</span></label>`).join("");
     const courses = COURSE_IDS.map(courseHTML).join("");
     const auto = planFor(todayIso());
-    const dtypes = [["auto", `自動（${DAY_TYPES[auto.type]}）`], ["strength", "筋トレ"], ["cardio", "有酸素"], ["rest", "休む"]]
-      .map(([k, label]) => chip("dtype", k, label, k === "auto" ? !cur.override : cur.override === k)).join("");
+    const dtypes = [["auto", "自動", DAY_TYPES[auto.type]], ["strength", "筋トレ"], ["cardio", "有酸素"], ["rest", "休む"]]
+      .map(([k, label, sub]) => `<button type="button" class="dt-tile" data-act="dtype" data-v="${k}" aria-pressed="${k === "auto" ? !cur.override : cur.override === k}">${DT_ICON[k]}<span>${label}</span>${sub ? `<small>${sub}</small>` : ""}</button>`).join("");
     const perm = "Notification" in window ? Notification.permission : "unsupported";
     $("#view-settings").innerHTML = `
-      <div class="card"><h3>今日の内容</h3><div class="chips">${dtypes}</div></div>
+      <div class="card"><h3>今日の内容</h3><div class="dt-grid">${dtypes}</div></div>
       <div class="card"><h3>コース</h3><div class="courses">${courses}</div></div>
       <div class="card"><h3>1回の時間</h3><div class="chips">${MINUTES.map((m) => chip("minutes", m, `<span class="n">${m}</span>分`, settings.minutes === m)).join("")}</div></div>
       <div class="card"><h3>通知（休憩の終わり・早歩き）</h3>
