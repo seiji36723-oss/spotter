@@ -167,6 +167,15 @@ button { cursor: pointer; }
 .skip { display: inline-flex; align-items: center; gap: 5px; padding: 7px 11px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: 12.5px; font-weight: 700; }
 .skip svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .skip.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.skip-x { margin-left: auto; flex: 0 0 auto; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); }
+.skip-x[aria-expanded="true"] { border-color: var(--ink); color: var(--ink); }
+.skip-x svg, .skip-opt svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.skip-sheet { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+.skip-opt { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); text-align: left; }
+.skip-opt span { display: flex; flex-direction: column; min-width: 0; }
+.skip-opt b { font-size: 15px; }
+.skip-opt small { font-size: 12px; font-weight: 700; color: var(--muted); }
+.skip-sheet .link { align-self: center; }
 .steps { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow); }
 .st-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .st-head span { font-size: 11.5px; color: var(--muted); }
@@ -453,7 +462,7 @@ button { cursor: pointer; }
 .dh-sum b { font-family: var(--font-num); font-size: 24px; color: var(--ink); }
 .dh-title { font-size: 15px; font-weight: 700; color: var(--muted); margin-top: 2px; }
 .dh-title b { color: var(--ink); font-size: 19px; }
-.dh-check { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; color: var(--muted); }
+.dh-check { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; font-size: 12px; color: var(--muted); }
 .dh-ok { color: var(--ok); font-weight: 700; }
 .dh-ng { color: var(--h3); font-weight: 700; }
 .dh-pace { margin-top: 4px; padding: 6px 10px; border-radius: 8px; background: var(--surface); border-left: 4px solid var(--ink); font-size: 12.5px; font-weight: 700; }
@@ -825,7 +834,13 @@ button { cursor: pointer; }
 .cal-day { position: relative; }
 .cal-day.k-a { background: var(--ink); border-color: var(--ink); color: var(--bg); font-weight: 700; }
 .cal-day.k-b { background: var(--surface); border: 2px solid var(--ink); color: var(--ink); font-weight: 700; }
-.cal-day.k-c { background: var(--faint); color: var(--bg); font-weight: 700; }
+.cal-day.k-c, .sw.k-c { background: var(--surface); border: 2px solid var(--h3); color: var(--h3); font-weight: 700; }
+.cal-day.k-rest, .sw.k-rest { background: var(--surface); border: 1px solid var(--line); color: var(--ok); }
+.cal-day.k-miss, .cal-day.k-skip, .sw.k-miss { background: var(--faint); border-color: var(--faint); color: var(--bg); font-weight: 700; }
+.cal-legend .sw.sq { width: 14px; height: 14px; border-radius: 4px; box-sizing: border-box; }
+.cal-key svg, .cal-rain svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; vertical-align: -1px; }
+.cal-rain { display: inline-flex; color: var(--ink); }
+.cal-rain svg { width: 15px; height: 15px; }
 .cal-day.k-heat { font-weight: 700; }
 .heat-scale { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; color: var(--muted); }
 .heat-scale i { flex: 1; height: 10px; border-radius: 5px; }
@@ -838,7 +853,7 @@ button { cursor: pointer; }
 .cal-legend b { font-family: var(--font-num); color: var(--ink); }
 .cal-legend .cal-up { position: static; font-size: 11px; color: var(--ink); }
 .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
-.sw.k-a { background: var(--ink); } .sw.k-b { border: 2px solid var(--ink); } .sw.k-c { background: var(--faint); }
+.sw.k-a { background: var(--ink); } .sw.k-b { border: 2px solid var(--ink); }
 .kind { display: inline-block; vertical-align: 2px; margin-left: 6px; font-family: var(--font-num); font-weight: 700; font-size: 14px; line-height: 1; padding: 3px 6px; border-radius: 5px; border: 1.5px solid var(--ink); }
 .kind.k-a { background: var(--ink); color: var(--bg); } .kind.k-b { color: var(--ink); }
 .rest-note { margin: 0; font-size: 12.5px; color: var(--muted); }
@@ -2150,6 +2165,7 @@ button { cursor: pointer; }
 
   // ── 1週間の予定。前の日は記録、今日から先は予定どおりに進めた場合のアプリの予定（任意の有酸素はやらない前提） ──
   let weekOff = 0; // 0：今週、1：来週
+  let skipOpen = false; // 「今日できない」の選ぶ欄を開いているか
   const WP_LABEL = { cardio: "有酸素", rest: "休み", off: "家で", skip: "お休み" };
   function weekPlan(off) {
     const today = todayIso();
@@ -2275,18 +2291,21 @@ button { cursor: pointer; }
         </button>`;
     }).join("")}</nav>` : "";
     const off = offKind(offDays[today]);
-    const skipBtn = (k) => `<button type="button" class="skip" data-act="skip" data-v="${k}">${SKIP_ICON[k]}<span>${SKIP_LABEL[k]}</span></button>`;
+    // 今日できないとき：×を押すと選ぶ欄が出る（雨で行けない／できない／今日はもういいや）
+    const canSkip = !off && !doneToday && t !== "rest";
+    const xBtn = canSkip ? `<button type="button" class="skip-x" data-act="skip-open" aria-expanded="${skipOpen}" aria-label="今日できない">${SKIP_ICON.cant}</button>` : "";
+    const SKIP_SUB = { rain: "家でできるメニューにする", cant: "今日はお休みにする", enough: anyDone() ? "ここまでを記録して終わる" : "今日はお休みにする" };
+    const skipOpt = (k) => `<button type="button" class="skip-opt" data-act="skip" data-v="${k}">${SKIP_ICON[k]}<span><b>${SKIP_LABEL[k]}</b><small>${SKIP_SUB[k]}</small></span></button>`;
     const skipRow = off ? `<div class="skip-row"><span class="skip on">${SKIP_ICON[off]}<span>${SKIP_LABEL[off]}</span></span><button type="button" class="mini" data-act="off-undo">やっぱりやる</button></div>`
-      : doneToday || t === "rest" ? ""
-      : anyDone() ? `<div class="skip-row">${skipBtn("enough")}</div>` // 途中まででやめる → そこまでを記録
-      : `<div class="skip-row">${["rain", "cant", "enough"].map(skipBtn).join("")}</div>`;
+      : canSkip && skipOpen ? `<div class="skip-sheet">${(anyDone() ? ["enough"] : ["rain", "cant", "enough"]).map(skipOpt).join("")}<button type="button" class="link" data-act="skip-open">閉じる</button></div>`
+      : "";
 
     $("#view-menu").innerHTML = `
       ${jump}
       <div class="day-hero">
         <div class="dh-row"><span class="dh-date">${now.getMonth() + 1}月${now.getDate()}日（${DOW[now.getDay()]}）</span>${showList ? `<span class="dh-sum"><b>${doneItems}</b>/${cur.items.length} 完了<br>約${menuMinutes()}分${curSets() ? ` · ${curSets()}セット` : ""}</span>` : ""}</div>
         <div class="dh-title"><b class="key t-${cur.skip ? "off" : t}">${badge}</b>${title}${tags}</div>
-        <div class="dh-check"><span class="dh-prev">${esc(cur.why)}</span></div>
+        <div class="dh-check"><span class="dh-prev">${esc(cur.why)}</span>${xBtn}</div>
       </div>
       ${skipRow}
       ${weekPlanHTML()}
@@ -2487,12 +2506,17 @@ button { cursor: pointer; }
       const iso = formatDateISO(d);
       const ss = byDate[iso];
       const daySets = ss ? ss.reduce((a, s) => a + s.items.reduce((b, it) => b + (EX[it.exId] && EX[it.exId].part !== "cardio" ? it.sets.length : 0), 0), 0) : 0;
-      const kindCls = !ss ? "" : daySets ? "k-heat" : "k-c";
+      // 記録がない過去の日：休みの予定だった日は「休」、できない・もういいや・予定をやらなかった日は灰色
+      const off = offKind(offDays[iso]);
+      const firstDay = logs.length ? logs.reduce((a, x) => (x.date < a ? x.date : a), logs[0].date) : null;
+      const missKind = ss || d >= today || !firstDay || iso < firstDay ? "" : off === "cant" || off === "enough" ? "skip" : planFor(iso).type === "rest" ? "rest" : "miss";
+      const kindCls = ss ? (daySets ? "k-heat" : "k-c") : missKind ? `k-${missKind}` : "";
       const r = Math.min(1, daySets / 16);
       const heatStyle = daySets ? ` style="background:${heatColor(r)};border-color:${heatColor(r)};color:${r > 0.45 ? "#fff" : "#5a0a05"}"` : "";
       // カレンダーの印：筋トレのメニュー（上・下・全など）、家でやった日は「家」、できない・もういいやの日は「×」
-      const keys = ss ? [...new Set(ss.filter((s) => s.v >= 3 && ALL_KEYS.includes(s.day) && !s.light && sessionType(s) === "strength").map((s) => menuBadge(s.day)))].join("") + (ss.some((s) => sessionType(s) === "home") ? "家" : "")
-        : ["cant", "enough"].includes(offKind(offDays[iso])) ? "×" : "";
+      const keys = ss ? [...new Set(ss.filter((s) => s.v >= 3 && ALL_KEYS.includes(s.day) && !s.light && sessionType(s) === "strength").map((s) => menuBadge(s.day)))].join("")
+          + (ss.some((s) => sessionType(s) === "home") ? SKIP_ICON.rain : !daySets ? "有" : "")
+        : { skip: "×", rest: "休", miss: "—" }[missKind] || "";
       const up = ss && ss.some((s) => s.items.some((it) => diffHTML(it, logs.indexOf(s)).includes('class="diff up"')));
       const cls = ["cal-day", kindCls, iso === tIso ? "today" : "", iso === selDay ? "sel" : ""].filter(Boolean).join(" ");
       cells += d > today ? `<span class="cal-day future">${n}</span>`
@@ -2558,6 +2582,10 @@ button { cursor: pointer; }
         <div class="cal-legend">
           <span><i class="sw" style="background:linear-gradient(90deg, ${heatColor(0.1)}, ${heatColor(1)})"></i>セット数</span>
           <span><i class="cal-up">▲</i>記録アップ</span>
+          <span><i class="sw sq k-c"></i>有酸素</span>
+          <span><i class="sw sq k-rest"></i>休み</span>
+          <span><i class="sw sq k-miss"></i>やらなかった</span>
+          <span><i class="cal-rain">${SKIP_ICON.rain}</i>雨・家で</span>
         </div>
       </div>
       ${lastSummary ? "" : day}`;
@@ -2721,8 +2749,13 @@ button { cursor: pointer; }
         delete walks[todayIso()];
         saveWalks(); renderMenu();
         break;
+      case "skip-open":
+        skipOpen = !skipOpen;
+        renderMenu();
+        break;
       case "skip": {
         const v = t.dataset.v;
+        skipOpen = false;
         if (v === "enough" && anyDone()) { finishSession(); toast("ここまでを記録しました"); break; }
         offDays[todayIso()] = v;
         saveOff(); rebuild(null); renderMenu();
