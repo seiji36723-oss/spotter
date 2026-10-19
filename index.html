@@ -167,6 +167,11 @@ button { cursor: pointer; }
 .skip { display: inline-flex; align-items: center; gap: 5px; padding: 7px 11px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: 12.5px; font-weight: 700; }
 .skip svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .skip.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.sp-row { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.sp-row .field .u { font-size: 13px; font-weight: 700; color: var(--muted); margin-right: 2px; }
+.sp-row select { min-width: 4.6em; }
+.sp-log { margin-left: 8px; font-size: 12.5px; color: var(--muted); }
+.now.focus { box-shadow: 0 0 0 2.5px var(--ink), var(--shadow); }
 .skip-x { margin-left: auto; flex: 0 0 auto; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); }
 .skip-x[aria-expanded="true"] { border-color: var(--ink); color: var(--ink); }
 .skip-x svg, .skip-opt svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -1783,7 +1788,7 @@ button { cursor: pointer; }
     const items = c.items.map((it) => ({
       exId: it.exId,
       unit: it.rx.unit,
-      sets: it.sets.filter((x) => x.done).map((x) => (it.rx.unit === "min" ? { m: x.m } : { w: x.w, r: x.r })),
+      sets: it.sets.filter((x) => x.done).map((x) => (it.rx.unit === "min" ? (SPEED_CTL[it.exId] ? { m: x.m, sp: Object.fromEntries(SPEED_CTL[it.exId].map((c) => [c.l, spValue(it, c)])) } : { m: x.m }) : { w: x.w, r: x.r })),
     })).filter((it) => it.sets.length);
     const startedAt = c.startedAt || c.createdAt;
     const type = c.type === "off" ? "home" : c.type === "strength" ? "strength" : "cardio";
@@ -1904,11 +1909,16 @@ button { cursor: pointer; }
     if (document.hidden) notify(title, text);
   }
   const fmtSec = (s) => `${Math.floor(s / 60)}:${pad(s % 60)}`;
-  // 休憩中に出す「次にやること」
-  function nextText() {
-    const k = cur ? cur.items.findIndex((x) => x.part !== "cardio" && !itemDone(x)) : -1;
-    if (k < 0) return cur && cur.items.some((x) => x.part === "cardio" && !itemDone(x)) ? "次：有酸素" : "";
+  // 種目の並び：上のアイコンで選んだ種目（いまやる）→ まだの筋トレ → まだの有酸素 → 終わったもの
+  const itemOrder = () => cur.items.map((_, i) => i).sort((a, b) => itemDone(cur.items[a]) - itemDone(cur.items[b])
+    || (b === cur.focus) - (a === cur.focus) || (cur.items[a].part === "cardio") - (cur.items[b].part === "cardio") || a - b);
+  // 休憩中に出す「次にやること」：いまの種目のセットが残っていればその続き、なければ並びの次
+  function nextText(i) {
+    if (!cur) return "";
+    const k = i != null && cur.items[i] && !itemDone(cur.items[i]) ? i : itemOrder().find((x) => !itemDone(cur.items[x]));
+    if (k == null) return "";
     const it = cur.items[k];
+    if (it.part === "cardio") return `次：${EX[it.exId].name.replace(/（.*）/, "")}`;
     const s = it.sets.findIndex((x) => !x.done);
     const st = it.sets[s];
     return `次：${EX[it.exId].name} ${s + 1}セット目${st.w != null ? ` ${fmtKg(st.w)}kg` : ""} × ${st.r}${it.rx.unit === "sec" ? "秒" : "回"}`;
@@ -1921,7 +1931,7 @@ button { cursor: pointer; }
     const st = it.sets[j];
     $("#timerAsk").hidden = !(st && st.t != null && st.r < st.t); // 目標に届かなかった → 次の休憩を30秒のばす提案
     $(".timer-label").textContent = `休憩 ${fmtSec(sec)}`;
-    $("#timerNext").textContent = nextText();
+    $("#timerNext").textContent = nextText(i);
     const el = $("#timer");
     el.hidden = false;
     el.classList.remove("over", "late");
@@ -1943,7 +1953,7 @@ button { cursor: pointer; }
     if (left <= 0 && !timer.beeped) {
       timer.beeped = true;
       $(".timer-label").textContent = "休憩終了";
-      alarm("休憩終了", nextText() || "次のセットを始めましょう");
+      alarm("休憩終了", nextText(timer.i) || "次のセットを始めましょう");
     }
     // 5分以上あいたら再開を促す
     if (left <= -300 && !timer.nudged) {
@@ -2103,7 +2113,7 @@ button { cursor: pointer; }
         <label class="w-big"><select data-act="w-all" data-i="${i}" aria-label="重さ（kg）">${weightOptions(itemWeight(it), ex.step)}</select><span>kg</span></label>
         <button type="button" class="stp" data-act="w-inc" data-i="${i}" aria-label="重さを1段階上げる">＋</button>
       </div>` : "";
-    return `<section class="now" id="ex-${i}">
+    return `<section class="now${cur.focus === i ? " focus" : ""}" id="ex-${i}">
       ${head}
       <div class="ex-body">
         ${prev}
@@ -2122,6 +2132,36 @@ button { cursor: pointer; }
     </section>`;
   }
   // 有酸素のカード（速さの指示・マシンの切り替え・時間の入力・インターバル）
+  // 変えられる値（ラベルは EX の speed と同じ）。前回使った値を settings.cardioPref に覚える
+  const SPEED_CTL = {
+    treadmill: [{ l: "速度", min: 1, max: 16, step: 0.5 }, { l: "傾斜", min: 0, max: 15, step: 1 }],
+    bike: [{ l: "負荷", min: 1, max: 20, step: 1 }],
+    elliptical: [{ l: "負荷", min: 1, max: 20, step: 1 }],
+  };
+  const fmtSp = (c, v) => (c.step < 1 ? Number(v).toFixed(1) : String(v));
+  function spValue(it, c) {
+    const st = it.sets[0];
+    if (st.sp && st.sp[c.l] != null) return st.sp[c.l];
+    const pref = (settings.cardioPref || {})[it.exId] || {};
+    if (pref[c.l] != null) return pref[c.l];
+    const d = (EX[it.exId].speed || []).find(([l]) => l === c.l);
+    return d ? Number(d[1]) : c.min;
+  }
+  // 見出しに出す速さ（変えた値を反映）
+  const curSpeed = (it) => (EX[it.exId].speed || []).map(([l, v, u]) => {
+    const c = (SPEED_CTL[it.exId] || []).find((x) => x.l === l);
+    return [l, c ? fmtSp(c, spValue(it, c)) : v, u];
+  });
+  function spCtlHTML(it, i) {
+    const ctl = SPEED_CTL[it.exId];
+    if (!ctl) return "";
+    return `<div class="sp-row">${ctl.map((c, k) => {
+      const v = spValue(it, c);
+      let opts = "";
+      for (let x = c.min; x <= c.max + 1e-9; x += c.step) { const y = Math.round(x * 10) / 10; opts += `<option value="${y}"${Math.abs(y - v) < 1e-6 ? " selected" : ""}>${fmtSp(c, y)}</option>`; }
+      return `<label class="field"><span class="u">${c.l}</span><select data-act="cardio-sp" data-i="${i}" data-k="${k}" aria-label="${c.l}">${opts}</select></label>`;
+    }).join("")}</div>`;
+  }
   const speedHTML = (sp) => (sp || []).map(([l, v, u]) => `<span>${l}<b>${v}</b>${u}</span>`).join("");
   const aimText = (rx) => (rx.lo == null ? "" : `目安 <b>${rx.hi && rx.hi !== rx.lo ? `${rx.lo}〜${rx.hi}` : rx.lo}</b>分`);
   function cardioCardHTML(it, i) {
@@ -2131,7 +2171,7 @@ button { cursor: pointer; }
     const day = it.role === "cardio-day";
     const pick = it.role === "home" ? "" : `<div class="cpick">${CARDIO_EX.map((id) => EX[id]).filter(usable).map((e) => `<button type="button" class="chip" data-act="cardio-pick" data-i="${i}" data-v="${e.id}" aria-pressed="${e.id === it.exId}">${noOf(e)} ${esc(e.name)}</button>`).join("")}</div>`;
     const iv = day && cur.intervalOK ? `<button type="button" class="btn${cur.interval ? " primary" : ""}" data-act="interval">${cur.interval ? "✓ インターバルにする" : "インターバルにする（週1回まで）"}</button>` : "";
-    const spd = cur.interval && day ? `<span class="spd iv"><b>30秒 速く → 90秒 ゆっくり を 8〜10本</b></span>` : `<span class="spd">${speedHTML(ex.speed)}</span>`;
+    const spd = cur.interval && day ? `<span class="spd iv"><b>30秒 速く → 90秒 ゆっくり を 8〜10本</b></span>` : `<span class="spd">${speedHTML(curSpeed(it))}</span>`;
     const head = `<div class="now-head">
         ${thumbHTML(ex.icon)}
         <div class="now-main">
@@ -2142,10 +2182,11 @@ button { cursor: pointer; }
       </div>`;
     const btn = `<button type="button" class="all-btn" data-act="check-all" data-i="${i}" aria-pressed="${done}">${CHECK_SVG}<span>${done ? `${m}分 完了（押すと取り消し）` : `${m}分 完了`}</span></button>`;
     if (done) return `<section class="now complete" id="ex-${i}">${head}<div class="ex-body">${btn}</div></section>`;
-    return `<section class="now cardio" id="ex-${i}">
+    return `<section class="now cardio${cur.focus === i ? " focus" : ""}" id="ex-${i}">
       ${head}
       <div class="ex-body">
         ${pick}
+        ${spCtlHTML(it, i)}
         <div class="set-row"><span class="set-no">時間</span><label class="field"><select data-act="set-m" data-i="${i}" aria-label="やった時間（分）">${numOptions(1, 90, 1, m)}</select><span class="u">分</span></label><span class="aim">${aimText(it.rx)}</span></div>
         ${iv}
         ${btn}
@@ -2262,7 +2303,7 @@ button { cursor: pointer; }
       </div>`;
 
     const card = (it, i) => (it.part === "cardio" ? cardioCardHTML(it, i) : exCardHTML(it, i));
-    const orderIdx = cur.items.map((_, i) => i).sort((a, b) => itemDone(cur.items[a]) - itemDone(cur.items[b]) || (cur.items[a].part === "cardio") - (cur.items[b].part === "cardio") || a - b);
+    const orderIdx = itemOrder();
     let main = "";
     if (doneToday && !anyDone() && !showAgain) {
       const tm = planFor(isoAdd(today, 1));
@@ -2325,7 +2366,11 @@ button { cursor: pointer; }
   const isStrength = (s) => s.items.some((it) => EX[it.exId] && EX[it.exId].part !== "cardio");
 
   function valHTML(it) {
-    if (it.unit === "min") return `<b>${it.sets.reduce((a, x) => a + x.m, 0)}</b>分`;
+    if (it.unit === "min") {
+      const sp = it.sets[0] && it.sets[0].sp;
+      const spText = sp ? Object.entries(sp).map(([l, v]) => { const c = (SPEED_CTL[it.exId] || []).find((x) => x.l === l); return `${l}${c ? fmtSp(c, v) : v}`; }).join("・") : "";
+      return `<b>${it.sets.reduce((a, x) => a + x.m, 0)}</b>分${spText ? `<span class="sp-log">${spText}</span>` : ""}`;
+    }
     const reps = it.sets.map((x) => x.r).join("・") + (it.unit === "sec" ? "秒" : "回");
     const ws = it.sets.map((x) => x.w).filter((w) => w != null);
     return ws.length ? `<b>${fmtKg(Math.max(...ws))}</b>kg × ${reps}` : reps;
@@ -2718,6 +2763,8 @@ button { cursor: pointer; }
     const j = Number(t.dataset.j);
     switch (act) {
       case "jump": {
+        // 押した種目を一番上に出して、そこから始められるように
+        if (!itemDone(cur.items[i])) { cur.focus = i; saveCur(); renderMenu(); }
         const el = document.getElementById(`ex-${i}`);
         if (el) el.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
         break;
@@ -2776,6 +2823,7 @@ button { cursor: pointer; }
         break;
       case "cardio-pick":
         cur.items[i].exId = t.dataset.v;
+        cur.items[i].sets[0].sp = null; // マシンを変えたら、そのマシンの前回の値から
         saveCur(); renderMenu();
         break;
       case "interval":
@@ -2896,6 +2944,7 @@ button { cursor: pointer; }
       case "check": {
         const st = cur.items[i].sets[j];
         st.done = !st.done;
+        if (cur.focus === i && itemDone(cur.items[i])) cur.focus = null;
         if (st.done && !cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
         // セットを終えたら休憩タイマーを自動で開始（全部終わったら止める）
@@ -2906,6 +2955,7 @@ button { cursor: pointer; }
         const it = cur.items[i];
         const all = itemDone(it);
         it.sets.forEach((x) => { x.done = !all; });
+        if (!all && cur.focus === i) cur.focus = null;
         if (!all && !cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
         if (!all && it.part !== "cardio" && cur.items.some((x) => x.part !== "cardio" && !itemDone(x))) startRest(i, it.sets.length - 1);
@@ -3033,6 +3083,17 @@ button { cursor: pointer; }
     if (act === "walk-m") {
       walkMin = Number(t.value);
       renderMenu();
+      return;
+    }
+    if (act === "cardio-sp") {
+      const it = cur.items[i];
+      const c = SPEED_CTL[it.exId][Number(t.dataset.k)];
+      const v = Number(t.value);
+      const st = it.sets[0];
+      st.sp = { ...(st.sp || {}), [c.l]: v };
+      settings.cardioPref = settings.cardioPref || {};
+      settings.cardioPref[it.exId] = { ...(settings.cardioPref[it.exId] || {}), [c.l]: v };
+      saveCur(); saveSettings(); renderMenu();
       return;
     }
     if (act === "set-m") {
