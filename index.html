@@ -94,13 +94,23 @@ button { cursor: pointer; }
 /* ── ヘッダー ── */
 .top { padding-top: env(safe-area-inset-top, 0px); position: sticky; top: 0; z-index: 6; background: var(--bg); }
 .top-in { padding-block: 10px 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
-.ft-pill { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 11px 0 9px; margin-left: 4px; border: 0; border-radius: 999px; background: var(--surface-2); color: var(--ink); }
+.ft-box { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
+.ft-pill { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 11px 0 9px; border: 0; border-radius: 999px; background: var(--surface-2); color: var(--ink); }
 .ft-pill svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .ft-pill b { font-family: var(--font-num); font-size: 18px; line-height: 1; font-variant-numeric: tabular-nums; }
 .ft-pill.run { background: var(--ink); color: var(--bg); }
-.ft-reset { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
-.ft-reset[hidden] { display: none; }
-.ft-reset svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.ft-ctl { display: grid; place-items: center; width: 32px; height: 32px; border: 1.5px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink); }
+.ft-ctl svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.ft-ctl svg .fill { fill: currentColor; stroke: none; }
+.top-in { flex-wrap: nowrap; }
+@media (max-width: 370px) {
+  .top-in .brand-name { font-size: 19px; letter-spacing: .07em; }
+  .top-in .brand-mark { width: 26px; height: 26px; }
+  .ft-box { gap: 3px; }
+  .ft-pill { height: 30px; padding: 0 8px 0 7px; gap: 4px; }
+  .ft-pill b { font-size: 16px; }
+  .ft-ctl { width: 28px; height: 28px; }
+}
 .ic-btn { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); }
 .ic-btn.big { width: 80px; height: 80px; background: var(--ink); color: var(--bg); }
 .ic-btn svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -920,11 +930,14 @@ button { cursor: pointer; }
       </svg>
       <h1 class="brand-name">SPOTTER</h1>
     </span>
-    <!-- タイマー：押すと 0 から数える／止める。止めている時だけ ↺ で 0 に戻せる -->
-    <button type="button" id="ftPill" class="ft-pill" data-act="ft-go" aria-label="タイマー">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5M12 2.5V5"/></svg><b id="ftTime">0:00</b>
-    </button>
-    <button type="button" id="ftReset" class="ft-reset" data-act="ft-reset" aria-label="タイマーを0に戻す" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg></button>
+    <!-- タイマー（右端）：0 から数える。▶/❚❚ で動かす・止める、↺ で 0 に戻す -->
+    <span class="ft-box">
+      <button type="button" id="ftPill" class="ft-pill" data-act="ft-go" aria-label="タイマー">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5M12 2.5V5"/></svg><b id="ftTime">0:00</b>
+      </button>
+      <button type="button" id="ftGo" class="ft-ctl" data-act="ft-go" aria-label="タイマーをスタート"></button>
+      <button type="button" id="ftReset" class="ft-ctl" data-act="ft-reset" aria-label="タイマーを0に戻す"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg></button>
+    </span>
   </div>
 </header>
 
@@ -1951,10 +1964,10 @@ button { cursor: pointer; }
     const show = ft.total ? Math.max(0, Math.ceil(ft.total - e)) : Math.floor(e);
     const tm = $("#ftTime");
     if (tm) tm.textContent = fmtSec(show);
-    const pill = $("#ftPill");
-    pill.classList.toggle("run", ftRunning());
-    pill.setAttribute("aria-label", ftRunning() ? "タイマーを止める" : "タイマーをスタート");
-    $("#ftReset").hidden = ftRunning() || e === 0;
+    $("#ftPill").classList.toggle("run", ftRunning());
+    const go = $("#ftGo");
+    go.innerHTML = ftRunning() ? ICON_PAUSE : ICON_PLAY;
+    go.setAttribute("aria-label", ftRunning() ? "タイマーを止める" : "タイマーをスタート");
     if (ft.total && ftRunning() && e >= ft.total) { // 時間になった
       ft.acc = ft.total; ft.since = 0; ft.rang = true;
       clearInterval(ft.id);
