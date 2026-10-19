@@ -94,6 +94,17 @@ button { cursor: pointer; }
 /* ── ヘッダー ── */
 .top { padding-top: env(safe-area-inset-top, 0px); }
 .top-in { padding-block: 12px 4px; display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
+.ft-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; height: 40px; min-width: 40px; padding: 0 9px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); }
+.ft-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ft-btn.run { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.ft-btn.ring { background: var(--red); border-color: var(--red); color: #fff; }
+.ft-btn-time { font-family: var(--font-num); font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+.ft-btn-time:empty { display: none; }
+.ft-panel { padding-block: 6px 4px; }
+.ft-card { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+.ft-time { font-family: var(--font-num); font-weight: 700; font-size: 56px; line-height: 1; font-variant-numeric: tabular-nums; }
+.ft-presets { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.ft-btns { justify-content: center; }
 .eyebrow { font-family: var(--font-num); font-weight: 700; font-size: 13px; letter-spacing: .28em; color: var(--muted); }
 /* ── 起動時のロゴ ── */
 .splash {
@@ -175,6 +186,7 @@ button { cursor: pointer; }
 .now:has(> .start-btn) .now-head { padding-top: 44px; }
 .start-btn { position: absolute; top: 10px; right: 12px;  display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 700; white-space: nowrap; }
 .start-btn.on { background: var(--ink); color: var(--bg); }
+.start-btn .since { font-family: var(--font-num); font-size: 15px; font-variant-numeric: tabular-nums; margin-left: 2px; }
 .now.focus { box-shadow: 0 0 0 2.5px var(--ink), var(--shadow); }
 .skip-x { margin-left: auto; flex: 0 0 auto; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); }
 .skip-x[aria-expanded="true"] { border-color: var(--ink); color: var(--ink); }
@@ -901,6 +913,29 @@ button { cursor: pointer; }
       </svg>
       <h1 class="brand-name">SPOTTER</h1>
     </span>
+    <!-- いつでも使えるタイマー：時計を押すと開く -->
+    <button type="button" id="ftBtn" class="ft-btn" data-act="ft-open" aria-expanded="false" aria-label="タイマー">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5M12 2.5V5M18.5 6.5l1.5-1.5"/></svg><span id="ftBtnTime" class="ft-btn-time"></span>
+    </button>
+  </div>
+  <div id="ftPanel" class="wrap ft-panel" hidden>
+    <div class="ft-card">
+      <span id="ftTime" class="ft-time">1:00</span>
+      <div class="ft-presets">
+        <button type="button" class="chip" data-act="ft-set" data-v="30">30秒</button>
+        <button type="button" class="chip" data-act="ft-set" data-v="60">1分</button>
+        <button type="button" class="chip" data-act="ft-set" data-v="120">2分</button>
+        <button type="button" class="chip" data-act="ft-set" data-v="180">3分</button>
+        <button type="button" class="chip" data-act="ft-set" data-v="300">5分</button>
+        <button type="button" class="chip" data-act="ft-set" data-v="600">10分</button>
+        <button type="button" class="chip" data-act="ft-set" data-v="0">はかる</button>
+      </div>
+      <div class="row-btns ft-btns">
+        <button type="button" id="ftGo" class="btn primary" data-act="ft-go">スタート</button>
+        <button type="button" class="btn" data-act="ft-reset">リセット</button>
+        <button type="button" class="btn ghost" data-act="ft-open">閉じる</button>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -1913,6 +1948,38 @@ button { cursor: pointer; }
     if (document.hidden) notify(title, text);
   }
   const fmtSec = (s) => `${Math.floor(s / 60)}:${pad(s % 60)}`;
+  // ── いつでも使えるタイマー（右上の時計）。total>0 ならカウントダウン、0 ならストップウォッチ ──
+  const $$ = (q) => Array.from(document.querySelectorAll(q));
+  const ft = { total: 60, acc: 0, since: 0, id: 0, rang: false };
+  const ftRunning = () => ft.since > 0;
+  const ftElapsed = () => ft.acc + (ftRunning() ? (Date.now() - ft.since) / 1000 : 0);
+  function ftTick() {
+    const e = ftElapsed();
+    const show = ft.total ? Math.max(0, Math.ceil(ft.total - e)) : Math.floor(e);
+    $("#ftTime").textContent = fmtSec(show);
+    $("#ftGo").textContent = ftRunning() ? "一時停止" : e > 0 ? "再開" : "スタート";
+    const btn = $("#ftBtn");
+    btn.classList.toggle("run", ftRunning());
+    btn.classList.toggle("ring", ft.rang);
+    $("#ftBtnTime").textContent = ftRunning() || e > 0 ? fmtSec(show) : "";
+    $$("#ftPanel [data-act=ft-set]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.v) === ft.total)));
+    if (ft.total && ftRunning() && e >= ft.total) { // 時間になった
+      ft.acc = ft.total; ft.since = 0; ft.rang = true;
+      clearInterval(ft.id);
+      alarm("タイマー", "時間になりました");
+      ftTick();
+    }
+  }
+  function ftGo() {
+    if (ftRunning()) { ft.acc = ftElapsed(); ft.since = 0; clearInterval(ft.id); }
+    else {
+      if (ft.total && ft.acc >= ft.total) ft.acc = 0;
+      ft.rang = false; ft.since = Date.now();
+      clearInterval(ft.id); ft.id = setInterval(ftTick, 250);
+    }
+    ftTick();
+  }
+  function ftReset() { clearInterval(ft.id); ft.acc = 0; ft.since = 0; ft.rang = false; ftTick(); }
   // 種目の並び：上のアイコンで選んだ種目（いまやる）→ まだの筋トレ → まだの有酸素 → 終わったもの
   const itemOrder = () => cur.items.map((_, i) => i).sort((a, b) => itemDone(cur.items[a]) - itemDone(cur.items[b])
     || (b === cur.focus) - (a === cur.focus) || (cur.items[a].part === "cardio") - (cur.items[b].part === "cardio") || a - b);
@@ -2053,7 +2120,7 @@ button { cursor: pointer; }
   // 右上のスタートボタン（押すとその種目を一番上に出して始める）。いまやっている種目は「いまやる」
   function startHTML(it, i) {
     if (itemDone(it)) return "";
-    return cur.focus === i ? '<span class="start-btn on">● いまやる</span>'
+    return cur.focus === i ? `<span class="start-btn on">● いまやる${cur.focusAt ? ` <b class="since" data-since="${cur.focusAt}">${fmtSec(Math.floor((Date.now() - cur.focusAt) / 1000))}</b>` : ""}</span>`
       : `<button type="button" class="start-btn" data-act="start" data-i="${i}" aria-label="${esc(EX[it.exId].name)}をスタート">▶ スタート</button>`;
   }
   function loadHTML(it, ex) {
@@ -2772,8 +2839,29 @@ button { cursor: pointer; }
     const i = Number(t.dataset.i);
     const j = Number(t.dataset.j);
     switch (act) {
+      case "ft-open": {
+        const pnl = $("#ftPanel");
+        pnl.hidden = !pnl.hidden;
+        $("#ftBtn").setAttribute("aria-expanded", String(!pnl.hidden));
+        if (ft.rang) { ft.rang = false; }
+        unlockAudio();
+        ftTick();
+        break;
+      }
+      case "ft-set":
+        ft.total = Number(t.dataset.v);
+        ftReset();
+        break;
+      case "ft-go":
+        unlockAudio();
+        ftGo();
+        break;
+      case "ft-reset":
+        ftReset();
+        break;
       case "start": {
         cur.focus = i;
+        cur.focusAt = Date.now(); // ここから時間をはかる
         if (!cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
         if (!$("#timer").hidden) $("#timerNext").textContent = nextText(i);
@@ -2783,7 +2871,7 @@ button { cursor: pointer; }
       }
       case "jump": {
         // 押した種目を一番上に出して、そこから始められるように
-        if (!itemDone(cur.items[i])) { cur.focus = i; saveCur(); renderMenu(); }
+        if (!itemDone(cur.items[i])) { if (cur.focus !== i) cur.focusAt = null; cur.focus = i; saveCur(); renderMenu(); }
         const el = document.getElementById(`ex-${i}`);
         if (el) el.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
         break;
@@ -2963,7 +3051,7 @@ button { cursor: pointer; }
       case "check": {
         const st = cur.items[i].sets[j];
         st.done = !st.done;
-        if (cur.focus === i && itemDone(cur.items[i])) cur.focus = null;
+        if (cur.focus === i && itemDone(cur.items[i])) { cur.focus = null; cur.focusAt = null; }
         if (st.done && !cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
         // セットを終えたら休憩タイマーを自動で開始（全部終わったら止める）
@@ -2974,7 +3062,11 @@ button { cursor: pointer; }
         const it = cur.items[i];
         const all = itemDone(it);
         it.sets.forEach((x) => { x.done = !all; });
-        if (!all && cur.focus === i) cur.focus = null;
+        if (!all && it.part === "cardio" && cur.focus === i && cur.focusAt && !it.mSet) {
+          const min = Math.round((Date.now() - cur.focusAt) / 60000);
+          if (min >= 1) it.sets[0].m = min;
+        }
+        if (!all && cur.focus === i) { cur.focus = null; cur.focusAt = null; }
         if (!all && !cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
         if (!all && it.part !== "cardio" && cur.items.some((x) => x.part !== "cardio" && !itemDone(x))) startRest(i, it.sets.length - 1);
@@ -3117,6 +3209,7 @@ button { cursor: pointer; }
     }
     if (act === "set-m") {
       cur.items[i].sets[0].m = Number(t.value);
+      cur.items[i].mSet = true; // 自分で時間を選んだ
       saveCur(); renderMenu();
       return;
     }
@@ -3142,6 +3235,7 @@ button { cursor: pointer; }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkDayChange(); });
   window.addEventListener("focus", checkDayChange);
   setInterval(() => { checkDayChange(); checkSteps(); }, 60000);
+  setInterval(() => { $$(".since").forEach((el) => { el.textContent = fmtSec(Math.max(0, Math.floor((Date.now() - Number(el.dataset.since)) / 1000))); }); }, 1000);
 
   // 起動
   ensureToday();
