@@ -229,15 +229,14 @@ button { cursor: pointer; }
 
 /* ── いちばん上の種目アイコン（スクロールしても上に残る） ── */
 .menu-sticky { position: sticky; top: 0; z-index: 5; margin: -4px -16px 0; padding: 6px 16px 8px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
-.ft-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.ft-row .ft-ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; }
-.ft-row .ft-time { font-family: var(--font-num); font-size: 24px; line-height: 1; min-width: 2.6em; font-variant-numeric: tabular-nums; }
+.ft-row { display: flex; justify-content: flex-end; }
+.ft-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 3px 3px 10px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); }
+.ft-row.run .ft-pill { border-color: var(--ink); }
+.ft-row .ft-ic svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; }
+.ft-row .ft-time { font-family: var(--font-num); font-size: 19px; line-height: 1; min-width: 2.4em; font-variant-numeric: tabular-nums; }
 .ft-row.ring .ft-time, .ft-row.ring .ft-ic { color: var(--red); }
-.ft-row .ft-presets { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
-.ft-row .ft-presets::-webkit-scrollbar { display: none; }
-.ft-row .chip { padding: 4px 9px; font-size: 12px; flex: 0 0 auto; }
-.ic-btn.sm { width: 34px; height: 34px; flex: 0 0 auto; }
-.ic-btn.sm svg { width: 17px; height: 17px; }
+.ic-btn.sm { width: 30px; height: 30px; flex: 0 0 auto; }
+.ic-btn.sm svg { width: 15px; height: 15px; }
 .ic-btn.dark { background: var(--ink); color: var(--bg); }
 .jump {
   position: static; z-index: 5; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px;
@@ -256,7 +255,7 @@ button { cursor: pointer; }
 .jp.doing { border-color: var(--h3); }
 .jp.done { border-color: var(--line); }
 .jp.done .jp-ic svg, .jp.done .jp-l { opacity: .45; }
-.now { scroll-margin-top: 150px; }
+.now { scroll-margin-top: 140px; }
 
 .brand { display: inline-flex; align-items: center; gap: 8px; }
 .brand-mark { width: 30px; height: 30px; flex: 0 0 auto; }
@@ -1932,13 +1931,13 @@ button { cursor: pointer; }
     if (document.hidden) notify(title, text);
   }
   const fmtSec = (s) => `${Math.floor(s / 60)}:${pad(s % 60)}`;
-  // ── いつでも使えるタイマー（右上の時計）。total>0 ならカウントダウン、0 ならストップウォッチ ──
+  // ── いつでも使えるタイマー（0から数える。total>0 ならカウントダウンもできるしくみは残す） ──
   const $$ = (q) => Array.from(document.querySelectorAll(q));
   // ボタンの絵（文字の代わり）
   const ICON_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="fill" d="M8 5.2v13.6L19 12z"/></svg>';
   const ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="fill" d="M6.5 5h4v14h-4zM13.5 5h4v14h-4z"/></svg>';
   const ICON_WATCH = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5M12 2.5V5"/></svg>';
-  const ft = { total: 60, acc: 0, since: 0, id: 0, rang: false };
+  const ft = { total: 0, acc: 0, since: 0, id: 0, rang: false };
   const ftRunning = () => ft.since > 0;
   const ftElapsed = () => ft.acc + (ftRunning() ? (Date.now() - ft.since) / 1000 : 0);
   function ftTick() {
@@ -1950,7 +1949,6 @@ button { cursor: pointer; }
     if (go) { go.innerHTML = ftRunning() ? ICON_PAUSE : ICON_PLAY; go.setAttribute("aria-label", ftRunning() ? "一時停止" : "スタート"); }
     const row = $(".ft-row");
     if (row) { row.classList.toggle("run", ftRunning()); row.classList.toggle("ring", ft.rang); }
-    $$(".ft-row [data-act=ft-set]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.v) === ft.total)));
     if (ft.total && ftRunning() && e >= ft.total) { // 時間になった
       ft.acc = ft.total; ft.since = 0; ft.rang = true;
       clearInterval(ft.id);
@@ -2397,13 +2395,12 @@ button { cursor: pointer; }
           <span class="jp-n">${isC ? `<b>${it.sets[0].m}</b>分` : `<b>${n}</b>/${it.sets.length}`}</span>
         </button>`;
     }).join("")}</nav>` : "";
-    // いつでも使えるタイマー（上に固定）：時計・残り時間・▶/❚❚・↺・時間を選ぶ
-    const ftRow = `<div class="ft-row">
-        <span class="ft-ic">${ICON_WATCH}</span><b id="ftTime" class="ft-time">1:00</b>
+    // いつでも使えるタイマー（右上の小さい欄に固定）：0から数えるだけ。▶/❚❚ と ↺
+    const ftRow = `<div class="ft-row"><div class="ft-pill">
+        <span class="ft-ic">${ICON_WATCH}</span><b id="ftTime" class="ft-time">0:00</b>
         <button type="button" id="ftGo" class="ic-btn sm dark" data-act="ft-go" aria-label="スタート"></button>
         <button type="button" class="ic-btn sm" data-act="ft-reset" aria-label="リセット"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg></button>
-        <div class="ft-presets">${[[30, "30秒"], [60, "1分"], [120, "2分"], [180, "3分"], [300, "5分"], [600, "10分"], [0, "はかる"]].map(([v, l]) => `<button type="button" class="chip" data-act="ft-set" data-v="${v}">${l}</button>`).join("")}</div>
-      </div>`;
+      </div></div>`;
     const off = offKind(offDays[today]);
     // 今日できないとき：×を押すと選ぶ欄が出る（雨で行けない／できない／今日はもういいや）
     const canSkip = !off && !doneToday && t !== "rest";
@@ -2835,10 +2832,6 @@ button { cursor: pointer; }
     const i = Number(t.dataset.i);
     const j = Number(t.dataset.j);
     switch (act) {
-      case "ft-set":
-        ft.total = Number(t.dataset.v);
-        ftReset();
-        break;
       case "ft-go":
         unlockAudio();
         ft.rang = false;
