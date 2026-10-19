@@ -1,6 +1,6 @@
 // SPOTTER のオフライン対応
 // アプリ本体は「まずネット、だめなら保存した分」、文字のフォントは「保存した分を先に出して裏で更新」
-const CACHE = "spotter-v18";
+const CACHE = "spotter-v19";
 const CORE = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-64.png"];
 
 self.addEventListener("install", (e) => {
@@ -26,7 +26,9 @@ self.addEventListener("fetch", (e) => {
   }
   if (url.origin !== location.origin) return;
   // アプリ本体：新しい版があればそれを使い、電波がなければ保存した分
-  e.respondWith(fetch(req).then((res) => {
+  // ブラウザの一時保存（最大10分）を通さずに、毎回 GitHub に新しい版があるか確かめる
+  const fresh = req.mode === "navigate" ? new Request(req.url, { cache: "no-cache", credentials: "same-origin" }) : new Request(req, { cache: "no-cache" });
+  e.respondWith(fetch(fresh).then((res) => {
     const copy = res.clone();
     caches.open(CACHE).then((c) => c.put(req, copy));
     return res;

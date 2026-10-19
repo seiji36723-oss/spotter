@@ -3240,6 +3240,19 @@ button { cursor: pointer; }
 <script>
   // アプリ版：一度開けば電波がなくても動くように（https か手元の確認用 localhost で開いた時だけ）
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
-    window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+    window.addEventListener("load", () => {
+      // 新しい版があればすぐ入れかえる：開いた時と、アプリに戻ってきた時に確かめる
+      navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then((reg) => {
+        document.addEventListener("visibilitychange", () => { if (!document.hidden) reg.update().catch(() => {}); });
+      }).catch(() => {});
+      // 新しい版に入れかわったら、一度だけ読み直して画面も新しくする
+      const hadController = !!navigator.serviceWorker.controller;
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!hadController || reloaded) return;
+        reloaded = true;
+        location.reload();
+      });
+    });
   }
 </script>
