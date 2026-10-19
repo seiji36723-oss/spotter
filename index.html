@@ -92,8 +92,15 @@ button { cursor: pointer; }
 }
 
 /* ── ヘッダー ── */
-.top { padding-top: env(safe-area-inset-top, 0px); }
-.top-in { padding-block: 12px 4px; display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
+.top { padding-top: env(safe-area-inset-top, 0px); position: sticky; top: 0; z-index: 6; background: var(--bg); }
+.top-in { padding-block: 10px 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
+.ft-pill { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 11px 0 9px; margin-left: 4px; border: 0; border-radius: 999px; background: var(--surface-2); color: var(--ink); }
+.ft-pill svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.ft-pill b { font-family: var(--font-num); font-size: 18px; line-height: 1; font-variant-numeric: tabular-nums; }
+.ft-pill.run { background: var(--ink); color: var(--bg); }
+.ft-reset { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
+.ft-reset[hidden] { display: none; }
+.ft-reset svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .ic-btn { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); }
 .ic-btn.big { width: 80px; height: 80px; background: var(--ink); color: var(--bg); }
 .ic-btn svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -228,13 +235,7 @@ button { cursor: pointer; }
 .wsum small { font-size: 11px; }
 
 /* ── いちばん上の種目アイコン（スクロールしても上に残る） ── */
-.menu-sticky { position: sticky; top: 0; z-index: 5; margin: -4px -16px 0; padding: 6px 16px 8px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
-.ft-row { display: flex; justify-content: flex-end; }
-.ft-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 3px 3px 10px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); }
-.ft-row.run .ft-pill { border-color: var(--ink); }
-.ft-row .ft-ic svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; }
-.ft-row .ft-time { font-family: var(--font-num); font-size: 19px; line-height: 1; min-width: 2.4em; font-variant-numeric: tabular-nums; }
-.ft-row.ring .ft-time, .ft-row.ring .ft-ic { color: var(--red); }
+.menu-sticky { position: sticky; top: var(--head-h, 52px); z-index: 5; margin: -4px -16px 0; padding: 6px 16px 8px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
 .ic-btn.sm { width: 30px; height: 30px; flex: 0 0 auto; }
 .ic-btn.sm svg { width: 15px; height: 15px; }
 .ic-btn.dark { background: var(--ink); color: var(--bg); }
@@ -255,7 +256,7 @@ button { cursor: pointer; }
 .jp.doing { border-color: var(--h3); }
 .jp.done { border-color: var(--line); }
 .jp.done .jp-ic svg, .jp.done .jp-l { opacity: .45; }
-.now { scroll-margin-top: 140px; }
+.now { scroll-margin-top: 160px; }
 
 .brand { display: inline-flex; align-items: center; gap: 8px; }
 .brand-mark { width: 30px; height: 30px; flex: 0 0 auto; }
@@ -919,6 +920,11 @@ button { cursor: pointer; }
       </svg>
       <h1 class="brand-name">SPOTTER</h1>
     </span>
+    <!-- タイマー：押すと 0 から数える／止める。止めている時だけ ↺ で 0 に戻せる -->
+    <button type="button" id="ftPill" class="ft-pill" data-act="ft-go" aria-label="タイマー">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5M12 2.5V5"/></svg><b id="ftTime">0:00</b>
+    </button>
+    <button type="button" id="ftReset" class="ft-reset" data-act="ft-reset" aria-label="タイマーを0に戻す" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg></button>
   </div>
 </header>
 
@@ -1945,10 +1951,10 @@ button { cursor: pointer; }
     const show = ft.total ? Math.max(0, Math.ceil(ft.total - e)) : Math.floor(e);
     const tm = $("#ftTime");
     if (tm) tm.textContent = fmtSec(show);
-    const go = $("#ftGo");
-    if (go) { go.innerHTML = ftRunning() ? ICON_PAUSE : ICON_PLAY; go.setAttribute("aria-label", ftRunning() ? "一時停止" : "スタート"); }
-    const row = $(".ft-row");
-    if (row) { row.classList.toggle("run", ftRunning()); row.classList.toggle("ring", ft.rang); }
+    const pill = $("#ftPill");
+    pill.classList.toggle("run", ftRunning());
+    pill.setAttribute("aria-label", ftRunning() ? "タイマーを止める" : "タイマーをスタート");
+    $("#ftReset").hidden = ftRunning() || e === 0;
     if (ft.total && ftRunning() && e >= ft.total) { // 時間になった
       ft.acc = ft.total; ft.since = 0; ft.rang = true;
       clearInterval(ft.id);
@@ -2395,12 +2401,6 @@ button { cursor: pointer; }
           <span class="jp-n">${isC ? `<b>${it.sets[0].m}</b>分` : `<b>${n}</b>/${it.sets.length}`}</span>
         </button>`;
     }).join("")}</nav>` : "";
-    // いつでも使えるタイマー（右上の小さい欄に固定）：0から数えるだけ。▶/❚❚ と ↺
-    const ftRow = `<div class="ft-row"><div class="ft-pill">
-        <span class="ft-ic">${ICON_WATCH}</span><b id="ftTime" class="ft-time">0:00</b>
-        <button type="button" id="ftGo" class="ic-btn sm dark" data-act="ft-go" aria-label="スタート"></button>
-        <button type="button" class="ic-btn sm" data-act="ft-reset" aria-label="リセット"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg></button>
-      </div></div>`;
     const off = offKind(offDays[today]);
     // 今日できないとき：×を押すと選ぶ欄が出る（雨で行けない／できない／今日はもういいや）
     const canSkip = !off && !doneToday && t !== "rest";
@@ -2412,7 +2412,7 @@ button { cursor: pointer; }
       : "";
 
     $("#view-menu").innerHTML = `
-      <div class="menu-sticky">${ftRow}${jump}</div>
+      <div class="menu-sticky">${jump}</div>
       <div class="day-hero">
         <div class="dh-row"><span class="dh-date">${now.getMonth() + 1}月${now.getDate()}日（${DOW[now.getDay()]}）</span>${showList ? `<span class="dh-sum"><b>${doneItems}</b>/${cur.items.length} 完了<br>約${menuMinutes()}分${curSets() ? ` · ${curSets()}セット` : ""}</span>` : ""}</div>
         <div class="dh-title"><b class="key t-${cur.skip ? "off" : t}">${badge}</b>${title}${tags}</div>
@@ -3216,6 +3216,9 @@ button { cursor: pointer; }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkDayChange(); });
   window.addEventListener("focus", checkDayChange);
   setInterval(() => { checkDayChange(); checkSteps(); }, 60000);
+  const setHeadH = () => document.documentElement.style.setProperty("--head-h", `${$(".top").offsetHeight}px`);
+  setHeadH();
+  window.addEventListener("resize", setHeadH);
   setInterval(() => { $$(".since").forEach((el) => { el.textContent = fmtSec(Math.max(0, Math.floor((Date.now() - Number(el.dataset.since)) / 1000))); }); }, 1000);
 
   // 起動
