@@ -94,10 +94,6 @@ button { cursor: pointer; }
 /* ── ヘッダー ── */
 .top { padding-top: env(safe-area-inset-top, 0px); }
 .top-in { padding-block: 12px 4px; display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
-.ft-card { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 28px 14px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
-.ft-time { font-family: var(--font-num); font-weight: 700; font-size: 84px; line-height: 1; font-variant-numeric: tabular-nums; }
-.ft-presets { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-.ft-btns { display: flex; align-items: center; justify-content: center; gap: 22px; }
 .ic-btn { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); }
 .ic-btn.big { width: 80px; height: 80px; background: var(--ink); color: var(--bg); }
 .ic-btn svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -232,9 +228,20 @@ button { cursor: pointer; }
 .wsum small { font-size: 11px; }
 
 /* ── いちばん上の種目アイコン（スクロールしても上に残る） ── */
+.menu-sticky { position: sticky; top: 0; z-index: 5; margin: -4px -16px 0; padding: 6px 16px 8px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
+.ft-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ft-row .ft-ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; }
+.ft-row .ft-time { font-family: var(--font-num); font-size: 24px; line-height: 1; min-width: 2.6em; font-variant-numeric: tabular-nums; }
+.ft-row.ring .ft-time, .ft-row.ring .ft-ic { color: var(--red); }
+.ft-row .ft-presets { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
+.ft-row .ft-presets::-webkit-scrollbar { display: none; }
+.ft-row .chip { padding: 4px 9px; font-size: 12px; flex: 0 0 auto; }
+.ic-btn.sm { width: 34px; height: 34px; flex: 0 0 auto; }
+.ic-btn.sm svg { width: 17px; height: 17px; }
+.ic-btn.dark { background: var(--ink); color: var(--bg); }
 .jump {
-  position: sticky; top: 0; z-index: 5; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px;
-  margin: -4px -16px 0; padding: 8px 16px; background: var(--bg);
+  position: static; z-index: 5; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px;
+  margin: 0; padding: 0; background: var(--bg);
 }
 .jp {
   display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; padding: 6px 2px 4px;
@@ -249,7 +256,7 @@ button { cursor: pointer; }
 .jp.doing { border-color: var(--h3); }
 .jp.done { border-color: var(--line); }
 .jp.done .jp-ic svg, .jp.done .jp-l { opacity: .45; }
-.now { scroll-margin-top: 104px; }
+.now { scroll-margin-top: 150px; }
 
 .brand { display: inline-flex; align-items: center; gap: 8px; }
 .brand-mark { width: 30px; height: 30px; flex: 0 0 auto; }
@@ -813,10 +820,7 @@ button { cursor: pointer; }
   background: var(--surface); border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-.tabs-in { display: grid; grid-template-columns: repeat(4, 1fr); height: var(--tabs-h); }
-#tabTimer.run { color: var(--ink); }
-#tabTimer.run span { font-family: var(--font-num); font-size: 14px; font-variant-numeric: tabular-nums; }
-#tabTimer.ring { color: var(--red); }
+.tabs-in { display: grid; grid-template-columns: repeat(3, 1fr); height: var(--tabs-h); }
 .tab {
   position: relative; background: none; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   font-size: 11px; font-weight: 700; color: var(--faint);
@@ -923,25 +927,6 @@ button { cursor: pointer; }
   <section id="view-menu" class="view"></section>
   <section id="view-log" class="view" hidden></section>
   <section id="view-settings" class="view" hidden></section>
-  <!-- いつでも使えるタイマー（下のタブ） -->
-  <section id="view-timer" class="view" hidden>
-    <div class="ft-card">
-      <span id="ftTime" class="ft-time">1:00</span>
-      <div class="ft-presets">
-        <button type="button" class="chip" data-act="ft-set" data-v="30">30秒</button>
-        <button type="button" class="chip" data-act="ft-set" data-v="60">1分</button>
-        <button type="button" class="chip" data-act="ft-set" data-v="120">2分</button>
-        <button type="button" class="chip" data-act="ft-set" data-v="180">3分</button>
-        <button type="button" class="chip" data-act="ft-set" data-v="300">5分</button>
-        <button type="button" class="chip" data-act="ft-set" data-v="600">10分</button>
-        <button type="button" class="chip" data-act="ft-set" data-v="0">はかる</button>
-      </div>
-      <div class="ft-btns">
-        <button type="button" class="ic-btn" data-act="ft-reset" aria-label="リセット"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg></button>
-        <button type="button" id="ftGo" class="ic-btn big" data-act="ft-go" aria-label="スタート"></button>
-      </div>
-    </div>
-  </section>
 </main>
 
 <div id="timer" class="timer" hidden>
@@ -961,11 +946,7 @@ button { cursor: pointer; }
   <div class="wrap tabs-in">
     <button type="button" class="tab" data-tab="menu" aria-current="page">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h2M20 12h2M6.5 7v10M17.5 7v10M4 9v6M20 9v6M6.5 12h11"/></svg>
-      <span>メニュー</span>
-    </button>
-    <button type="button" class="tab" data-tab="timer" id="tabTimer">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5M12 2.5V5M18.5 6.5l1.5-1.5"/></svg>
-      <span id="tabTimerLabel">タイマー</span>
+      <span>今日のメニュー</span>
     </button>
     <button type="button" class="tab" data-tab="log">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M12 14h2M8 17h2"/></svg>
@@ -1963,15 +1944,13 @@ button { cursor: pointer; }
   function ftTick() {
     const e = ftElapsed();
     const show = ft.total ? Math.max(0, Math.ceil(ft.total - e)) : Math.floor(e);
-    $("#ftTime").textContent = fmtSec(show);
+    const tm = $("#ftTime");
+    if (tm) tm.textContent = fmtSec(show);
     const go = $("#ftGo");
-    go.innerHTML = ftRunning() ? ICON_PAUSE : ICON_PLAY;
-    go.setAttribute("aria-label", ftRunning() ? "一時停止" : "スタート");
-    const tb = $("#tabTimer");
-    tb.classList.toggle("run", ftRunning() || e > 0);
-    tb.classList.toggle("ring", ft.rang);
-    $("#tabTimerLabel").textContent = ftRunning() || e > 0 ? fmtSec(show) : "タイマー";
-    $$("#view-timer [data-act=ft-set]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.v) === ft.total)));
+    if (go) { go.innerHTML = ftRunning() ? ICON_PAUSE : ICON_PLAY; go.setAttribute("aria-label", ftRunning() ? "一時停止" : "スタート"); }
+    const row = $(".ft-row");
+    if (row) { row.classList.toggle("run", ftRunning()); row.classList.toggle("ring", ft.rang); }
+    $$(".ft-row [data-act=ft-set]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.v) === ft.total)));
     if (ft.total && ftRunning() && e >= ft.total) { // 時間になった
       ft.acc = ft.total; ft.since = 0; ft.rang = true;
       clearInterval(ft.id);
@@ -2362,6 +2341,7 @@ button { cursor: pointer; }
   }
 
   function renderMenu() {
+    setTimeout(ftTick, 0); // タイマーの表示を今の状態に
     ensureToday();
     const now = new Date();
     const today = todayIso();
@@ -2417,6 +2397,13 @@ button { cursor: pointer; }
           <span class="jp-n">${isC ? `<b>${it.sets[0].m}</b>分` : `<b>${n}</b>/${it.sets.length}`}</span>
         </button>`;
     }).join("")}</nav>` : "";
+    // いつでも使えるタイマー（上に固定）：時計・残り時間・▶/❚❚・↺・時間を選ぶ
+    const ftRow = `<div class="ft-row">
+        <span class="ft-ic">${ICON_WATCH}</span><b id="ftTime" class="ft-time">1:00</b>
+        <button type="button" id="ftGo" class="ic-btn sm dark" data-act="ft-go" aria-label="スタート"></button>
+        <button type="button" class="ic-btn sm" data-act="ft-reset" aria-label="リセット"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg></button>
+        <div class="ft-presets">${[[30, "30秒"], [60, "1分"], [120, "2分"], [180, "3分"], [300, "5分"], [600, "10分"], [0, "はかる"]].map(([v, l]) => `<button type="button" class="chip" data-act="ft-set" data-v="${v}">${l}</button>`).join("")}</div>
+      </div>`;
     const off = offKind(offDays[today]);
     // 今日できないとき：×を押すと選ぶ欄が出る（雨で行けない／できない／今日はもういいや）
     const canSkip = !off && !doneToday && t !== "rest";
@@ -2428,7 +2415,7 @@ button { cursor: pointer; }
       : "";
 
     $("#view-menu").innerHTML = `
-      ${jump}
+      <div class="menu-sticky">${ftRow}${jump}</div>
       <div class="day-hero">
         <div class="dh-row"><span class="dh-date">${now.getMonth() + 1}月${now.getDate()}日（${DOW[now.getDay()]}）</span>${showList ? `<span class="dh-sum"><b>${doneItems}</b>/${cur.items.length} 完了<br>約${menuMinutes()}分${curSets() ? ` · ${curSets()}セット` : ""}</span>` : ""}</div>
         <div class="dh-title"><b class="key t-${cur.skip ? "off" : t}">${badge}</b>${title}${tags}</div>
@@ -2817,8 +2804,7 @@ button { cursor: pointer; }
     document.querySelectorAll(".tab").forEach((b) => {
       if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
-    ["menu", "log", "settings", "timer"].forEach((v) => { $("#view-" + v).hidden = v !== t; });
-    if (t === "timer") { ft.rang = false; unlockAudio(); ftTick(); }
+    ["menu", "log", "settings"].forEach((v) => { $("#view-" + v).hidden = v !== t; });
     if (t === "menu") renderMenu();
     if (t === "log") renderLog();
     if (t === "settings") renderSettings();
@@ -2855,6 +2841,7 @@ button { cursor: pointer; }
         break;
       case "ft-go":
         unlockAudio();
+        ft.rang = false;
         ftGo();
         break;
       case "ft-reset":
