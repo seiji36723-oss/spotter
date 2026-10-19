@@ -126,7 +126,9 @@ button { cursor: pointer; }
 .sp-in { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .sp-mark { width: 96px; height: 96px; overflow: visible; }
 .sp-name { display: flex; gap: .14em; font-family: var(--font-num); font-weight: 700; font-style: italic; font-size: 40px; line-height: 1; letter-spacing: .02em; color: var(--ink); }
-.sp-name span { display: inline-block; }
+/* 斜めの文字の右上が動いている間に切れないよう、文字の枠に余白をとる（並びの間隔は変えない） */
+.sp-name span { display: inline-block; padding: .08em .2em; margin: -.08em -.2em; }
+.sp-in { padding: 0 12px; overflow: visible; }
 .sp-sub { margin: 0; font-size: 12px; color: var(--muted); }
 @media (prefers-reduced-motion: no-preference) {
   .sp-mark { animation: sp-pop .7s cubic-bezier(.2, .9, .3, 1.35) both; }
@@ -272,7 +274,7 @@ button { cursor: pointer; }
 .bm-bg { fill: var(--ink); }
 .bm-fg { fill: var(--bg); }
 .bm-dot { fill: var(--red); }
-.brand-name { margin: 0; font-family: var(--font-num); font-weight: 700; font-style: italic; font-size: 25px; letter-spacing: .14em; line-height: 1; }
+.brand-name { padding-right: .12em; margin: 0; font-family: var(--font-num); font-weight: 700; font-style: italic; font-size: 25px; letter-spacing: .14em; line-height: 1; }
 .sub { margin: 0; font-size: 11px; color: var(--muted); }
 
 .view { display: flex; flex-direction: column; gap: 14px; padding-block: 4px 8px; }
@@ -900,7 +902,7 @@ button { cursor: pointer; }
 <!-- 起動時のロゴ（押すと飛ばせる） -->
 <div id="splash" class="splash" aria-hidden="true">
   <div class="sp-in">
-    <svg class="sp-mark" viewBox="0 0 32 32">
+    <svg class="sp-mark" viewBox="-2 -2 36 36">
       <rect width="32" height="32" rx="9" class="bm-bg"/>
       <g class="sp-bell">
         <rect x="5" y="12" width="4" height="12" rx="1.5" class="bm-fg"/>
