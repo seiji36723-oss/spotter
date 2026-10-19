@@ -199,7 +199,6 @@ button { cursor: pointer; }
 .start-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .start-btn svg .fill { fill: currentColor; stroke: none; }
 .start-btn.on { background: var(--ink); color: var(--bg); }
-.start-btn .since { font-family: var(--font-num); font-size: 15px; font-variant-numeric: tabular-nums; margin-left: 2px; }
 .now.focus { box-shadow: 0 0 0 2.5px var(--ink), var(--shadow); }
 .skip-x { margin-left: auto; flex: 0 0 auto; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); }
 .skip-x[aria-expanded="true"] { border-color: var(--ink); color: var(--ink); }
@@ -2122,10 +2121,10 @@ button { cursor: pointer; }
     return next ? next.w : null;
   }
   const unitOf = (it) => (it.rx.unit === "sec" ? "秒" : it.rx.unit === "min" ? "分" : "回");
-  // 右上のスタートボタン（押すとその種目を一番上に出して始める）。いまやっている種目は「いまやる」
+  // 右上のスタートボタン（押すとその種目を一番上に出す）。いまやっている種目は黒い ▶
   function startHTML(it, i) {
     if (itemDone(it)) return "";
-    return cur.focus === i ? `<span class="start-btn on" aria-label="いまやっている">${ICON_WATCH}${cur.focusAt ? `<b class="since" data-since="${cur.focusAt}">${fmtSec(Math.floor((Date.now() - cur.focusAt) / 1000))}</b>` : ""}</span>`
+    return cur.focus === i ? `<span class="start-btn on" aria-label="いまやっている">${ICON_PLAY}</span>`
       : `<button type="button" class="start-btn" data-act="start" data-i="${i}" aria-label="${esc(EX[it.exId].name)}をスタート">${ICON_PLAY}</button>`;
   }
   function loadHTML(it, ex) {
@@ -2855,7 +2854,6 @@ button { cursor: pointer; }
         break;
       case "start": {
         cur.focus = i;
-        cur.focusAt = Date.now(); // ここから時間をはかる
         if (!cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
         if (!$("#timer").hidden) $("#timerNext").textContent = nextText(i);
@@ -2865,7 +2863,7 @@ button { cursor: pointer; }
       }
       case "jump": {
         // 押した種目を一番上に出して、そこから始められるように
-        if (!itemDone(cur.items[i])) { if (cur.focus !== i) cur.focusAt = null; cur.focus = i; saveCur(); renderMenu(); }
+        if (!itemDone(cur.items[i])) { cur.focus = i; saveCur(); renderMenu(); }
         const el = document.getElementById(`ex-${i}`);
         if (el) el.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
         break;
@@ -3045,7 +3043,7 @@ button { cursor: pointer; }
       case "check": {
         const st = cur.items[i].sets[j];
         st.done = !st.done;
-        if (cur.focus === i && itemDone(cur.items[i])) { cur.focus = null; cur.focusAt = null; }
+        if (cur.focus === i && itemDone(cur.items[i])) cur.focus = null;
         if (st.done && !cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
         // セットを終えたら休憩タイマーを自動で開始（全部終わったら止める）
@@ -3056,11 +3054,7 @@ button { cursor: pointer; }
         const it = cur.items[i];
         const all = itemDone(it);
         it.sets.forEach((x) => { x.done = !all; });
-        if (!all && it.part === "cardio" && cur.focus === i && cur.focusAt && !it.mSet) {
-          const min = Math.round((Date.now() - cur.focusAt) / 60000);
-          if (min >= 1) it.sets[0].m = min;
-        }
-        if (!all && cur.focus === i) { cur.focus = null; cur.focusAt = null; }
+        if (!all && cur.focus === i) cur.focus = null;
         if (!all && !cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
         if (!all && it.part !== "cardio" && cur.items.some((x) => x.part !== "cardio" && !itemDone(x))) startRest(i, it.sets.length - 1);
@@ -3203,7 +3197,6 @@ button { cursor: pointer; }
     }
     if (act === "set-m") {
       cur.items[i].sets[0].m = Number(t.value);
-      cur.items[i].mSet = true; // 自分で時間を選んだ
       saveCur(); renderMenu();
       return;
     }
@@ -3232,7 +3225,6 @@ button { cursor: pointer; }
   const setHeadH = () => document.documentElement.style.setProperty("--head-h", `${$(".top").offsetHeight}px`);
   setHeadH();
   window.addEventListener("resize", setHeadH);
-  setInterval(() => { $$(".since").forEach((el) => { el.textContent = fmtSec(Math.max(0, Math.floor((Date.now() - Number(el.dataset.since)) / 1000))); }); }, 1000);
 
   // 起動
   ensureToday();
