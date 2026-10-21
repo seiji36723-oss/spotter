@@ -1602,6 +1602,32 @@ button { cursor: pointer; }
   const saveBody = () => save(LS.body, body);
   saveSettings();
 
+  // ── 保存データの確かめ：形が違う記録・ありえない数の記録は読み飛ばす（画面が真っ白にならないように） ──
+  const isDate = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  const inRange = (v, lo, hi) => v == null || (typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi);
+  const isObj = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+  // 1回分の記録：日付は 2026-10-18 の形、種目ごとにセットの配列、重さ 0〜500kg・回数 0〜999・時間 0〜600分
+  const validSession = (s) => isObj(s) && s.id != null && isDate(s.date) && Array.isArray(s.items)
+    && s.items.every((it) => isObj(it) && typeof it.exId === "string" && Array.isArray(it.sets)
+      && it.sets.every((x) => isObj(x) && inRange(x.w, 0, 500) && inRange(x.r, 0, 999) && inRange(x.m, 0, 600)));
+  const validBody = (r) => isObj(r) && isDate(r.date) && inRange(r.weight, 20, 300);
+  const validWalk = (v) => v === true || (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 600);
+  const validOff = (v) => v === true || v === "rain" || v === "cant" || v === "enough";
+  const pickEntries = (o, ok) => Object.fromEntries(Object.entries(isObj(o) ? o : {}).filter(([k, v]) => isDate(k) && ok(v)));
+  // 保存済みのデータにもかける（すでに壊れた記録が入っていても、開けるように戻す）
+  {
+    const L = Array.isArray(logs) ? logs.filter(validSession) : [];
+    if (!Array.isArray(logs) || L.length !== logs.length) { logs = L; saveLogs(); }
+    const B = Array.isArray(body) ? body.filter(validBody) : [];
+    if (!Array.isArray(body) || B.length !== body.length) { body = B; saveBody(); }
+    const W = pickEntries(walks, validWalk);
+    if (!isObj(walks) || Object.keys(W).length !== Object.keys(walks).length) { walks = W; saveWalks(); }
+    const O = pickEntries(offDays, validOff);
+    if (!isObj(offDays) || Object.keys(O).length !== Object.keys(offDays).length) { offDays = O; saveOff(); }
+    const curOk = isObj(cur) && isDate(cur.date) && Array.isArray(cur.items) && cur.items.every((it) => isObj(it) && typeof it.exId === "string" && Array.isArray(it.sets) && isObj(it.rx) && it.sets.every(isObj));
+    if (cur && !curOk) { cur = null; saveCur(); }
+  }
+
   // ── 日付 ──
   const DOW = ["日", "月", "火", "水", "木", "金", "土"];
   const isoToDate = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
@@ -1710,7 +1736,9 @@ button { cursor: pointer; }
   const usable = (ex) => !ex.equip || caps().has(ex.equip);
   // 前の版の作りかけメニューや、今はもう使わない種目・使えないマシンが入ったメニューは作り直す
   const staleCur = (c) => !c || c.ver !== 6 || (c.course || "belly") !== settings.course || (c.gym || "choco") !== settings.gym || c.items.some((it) => !EX[it.exId] || EX[it.exId].old || !usable(EX[it.exId]));
-  if (staleCur(cur)) cur = null;
+  const doneIn = (c) => !!c && c.items.some((it) => it.sets.some((x) => x.done));
+  // 作りかけのメニューが今の設定と合わない時は作り直す。ただし完了したセットがあれば、その日の記録を終えるまで続ける
+  if (staleCur(cur) && !(doneIn(cur) && cur.items.every((it) => EX[it.exId]))) cur = null;
 
   // ── 前回を少しでも上回る目標 ──
   // 前回の全セットが目標回数の上限に届いた → 1段階重く。届かなかった → 同じ重さで合計1回（プランクは5秒）でも多く
@@ -1837,12 +1865,16 @@ button { cursor: pointer; }
     return { v: 5, id: "s" + endedAt.toString(36), date: formatDateISO(new Date(startedAt)), type, day: c.day, interval: !!c.interval, startedAt, endedAt, items };
   }
   // 今日のメニューを用意する。前の日に途中まで記録して終えていなければ、その日の分として保存
+  const KEEP_MS = 3 * 3600e3; // 記録中とみなす時間（最後に完了を押してから）
   function ensureToday() {
     const today = todayIso();
     if (cur && cur.date !== today) {
+      // 0時をまたいでも、記録中ならそのまま続ける（記録は始めた日の分になる）
+      if (anyDone() && cur.lastAt && Date.now() - cur.lastAt < KEEP_MS) return;
       if (anyDone()) {
+        // 終わりの時刻は、最後に完了を押した時刻（なければ見積もり）
         const started = cur.startedAt || cur.createdAt;
-        logs.push(sessionOf(cur, started + Math.max(10, menuMinutes()) * 60000));
+        logs.push(sessionOf(cur, cur.lastAt || started + Math.max(10, menuMinutes()) * 60000));
         saveLogs();
       }
       cur = null;
@@ -3045,6 +3077,7 @@ button { cursor: pointer; }
       case "check": {
         const st = cur.items[i].sets[j];
         st.done = !st.done;
+        if (st.done) cur.lastAt = Date.now();
         if (cur.focus === i && itemDone(cur.items[i])) cur.focus = null;
         if (st.done && !cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
@@ -3056,6 +3089,7 @@ button { cursor: pointer; }
         const it = cur.items[i];
         const all = itemDone(it);
         it.sets.forEach((x) => { x.done = !all; });
+        if (!all) cur.lastAt = Date.now();
         if (!all && cur.focus === i) cur.focus = null;
         if (!all && !cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
@@ -3130,18 +3164,20 @@ button { cursor: pointer; }
         if (!data || !Array.isArray(data.logs)) { toast("読み込めませんでした（記録が見つかりません）"); break; }
         // 同じ記録は重ねない（idで判定）。日付順に並べ直す
         const have = new Set(logs.map((x) => x.id));
-        const add = data.logs.filter((x) => x && x.id && x.date && Array.isArray(x.items) && !have.has(x.id));
+        const good = data.logs.filter(validSession); // 形が違う記録は読み飛ばす
+        const skipped = data.logs.length - good.length;
+        const add = good.filter((x) => !have.has(x.id));
         logs = logs.concat(add).sort((a, b) => (a.startedAt || 0) - (b.startedAt || 0));
         saveLogs();
         if (data.settings && data.settings.v === SETTINGS_VER && data.settings.equip) { Object.assign(settings, { equip: { ...settings.equip, ...data.settings.equip } }, GYMS[data.settings.gym] ? { gym: data.settings.gym } : {}); saveSettings(); }
         // 体重、歩数、行けない日も（同じ日は読み込んだほうを使う）
-        if (Array.isArray(data.body)) { const m = new Map(body.map((r) => [r.date, r])); data.body.forEach((r) => r && r.date && m.set(r.date, r)); body = [...m.values()]; saveBody(); }
-        if (data.walks && typeof data.walks === "object") { walks = { ...walks, ...data.walks }; saveWalks(); }
-        if (data.off && typeof data.off === "object") { offDays = { ...offDays, ...data.off }; saveOff(); }
+        if (Array.isArray(data.body)) { const m = new Map(body.map((r) => [r.date, r])); data.body.filter(validBody).forEach((r) => m.set(r.date, r)); body = [...m.values()]; saveBody(); }
+        if (isObj(data.walks)) { walks = { ...walks, ...pickEntries(data.walks, validWalk) }; saveWalks(); }
+        if (isObj(data.off)) { offDays = { ...offDays, ...pickEntries(data.off, validOff) }; saveOff(); }
         xfer = null;
         if (!anyDone()) rebuild();
         renderSettings();
-        toast(`${add.length}回分の記録を読み込みました`);
+        toast(`${add.length}回分の記録を読み込みました${skipped ? `（${skipped}件は形が違うので読み飛ばしました）` : ""}`);
         break;
       }
       case "wipe-ask":
@@ -3213,13 +3249,16 @@ button { cursor: pointer; }
   let shownDay = todayIso();
   function checkDayChange() {
     const d = todayIso();
-    if (d === shownDay) return;
-    shownDay = d;
+    const carried = cur && cur.date !== d; // 前の日から続けている記録
+    if (d === shownDay && !carried) return;
+    const before = cur;
     ensureToday();
+    if (d === shownDay && cur === before) return; // まだ記録中
+    shownDay = d;
     selDay = null;
     calMonth = null;
-    stopRest();
-    switchTab(tab);
+    if (cur !== before) { stopRest(); switchTab(tab); } // 前の日の分を締めた → 今日のメニューに
+    else if (tab === "menu") renderMenu(); // 記録中のまま、日付の表示だけ新しく
   }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkDayChange(); });
   window.addEventListener("focus", checkDayChange);
