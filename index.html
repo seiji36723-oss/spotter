@@ -241,7 +241,8 @@ button { cursor: pointer; }
 .wsum small { font-size: 11px; }
 
 /* ── いちばん上の種目アイコン（スクロールしても上に残る） ── */
-.menu-sticky { position: sticky; top: var(--head-h, 52px); z-index: 5; margin: -4px -16px 0; padding: 6px 16px 8px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
+.menu-sticky { position: fixed; z-index: 7; left: 50%; transform: translateX(-50%); width: min(100%, 560px); bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px)); padding: 6px max(16px, env(safe-area-inset-left, 0px)) 6px; background: var(--bg); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.menu-sticky:empty { display: none; }
 .ic-btn.sm { width: 30px; height: 30px; flex: 0 0 auto; }
 .ic-btn.sm svg { width: 15px; height: 15px; }
 .ic-btn.dark { background: var(--ink); color: var(--bg); }
@@ -250,19 +251,19 @@ button { cursor: pointer; }
   margin: 0; padding: 0; background: var(--bg);
 }
 .jp {
-  display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; padding: 6px 2px 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 0; padding: 3px 2px 2px;
   border: 1.5px solid var(--ink); background: var(--surface); border-radius: 12px; line-height: 1.15;
 }
-.jp-ic { position: relative; width: 40px; height: 40px; }
+.jp-ic { position: relative; width: 26px; height: 26px; }
 .jp-ic svg { width: 100%; height: 100%; display: block; }
-.jp-ok { position: absolute; right: -6px; top: -6px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 700; background: var(--ok); color: #fff; }
-.jp-l { font-size: 11.5px; font-weight: 700; }
-.jp-n { font-family: var(--font-num); font-size: 12px; color: var(--muted); }
-.jp-n b { font-size: 14px; color: var(--ink); }
+.jp-ok { position: absolute; right: -7px; top: -5px; width: 15px; height: 15px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 700; background: var(--ok); color: #fff; }
+.jp-l { font-size: 10px; font-weight: 700; }
+.jp-n { font-family: var(--font-num); font-size: 10.5px; color: var(--muted); }
+.jp-n b { font-size: 12px; color: var(--ink); }
 .jp.doing { border-color: var(--h3); }
 .jp.done { border-color: var(--line); }
 .jp.done .jp-ic svg, .jp.done .jp-l { opacity: .45; }
-.now { scroll-margin-top: 160px; }
+.now { scroll-margin-top: calc(var(--head-h, 52px) + 10px); }
 
 .brand { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .brand-mark { width: 30px; height: 30px; flex: 0 0 auto; }
@@ -2060,10 +2061,12 @@ button { cursor: pointer; }
     const ex = it ? EX[it.exId] : null;
     let cls = "done", l = "", t = "", n = "全部完了"; // l：小さいラベル、t：太い時間、n：種目名など
     if (it) n = ex.name.replace(/（.*）/, "");
-    if (it && it.part === "cardio") { cls = "wait cardio"; l = n; t = ""; n = aimText(it.rx).replace(/<\/?b>| /g, "") || "有酸素"; }
+    const started = it && it.exId === cur.nowEx && Number.isFinite(cur.doingAt) && cur.doingAt >= restAtNow(); // ▶ で始めた
+    if (it && it.part === "cardio" && started) { cls = "doing"; l = n; t = fmtSec(Math.floor((Date.now() - Math.min(cur.doingAt, Date.now())) / 1000)); n = ""; }
+    else if (it && it.part === "cardio") { cls = "wait cardio"; l = n; t = ""; n = aimText(it.rx).replace(/<\/?b>| /g, "") || "有酸素"; }
     else if (it) {
       const at = restAtNow(), rs = restSecOk();
-      const sec = at && anyDone() ? (Date.now() - at) / 1000 : -1;
+      const sec = at && anyDone() ? (Date.now() - at) / 1000 : started ? 0 : -1;
       // トレーニング中：休憩中に ▶ を押した時刻か、目安を過ぎた時刻から（ここでは保存しない。別のタブの記録を上書きしないため）
       const doingFrom = Number.isFinite(cur.doingAt) && cur.doingAt >= at ? Math.min(cur.doingAt, Date.now()) : sec >= rs ? at + rs * 1000 : 0;
       if (sec < 0) { cls = "wait"; l = "次"; }
@@ -2163,7 +2166,7 @@ button { cursor: pointer; }
   // 右上のスタートボタン（押すとその種目を一番上に出す）。いまやっている種目は黒い ▶
   function startHTML(it, i) {
     if (itemDone(it)) return "";
-    return cur.focus === i ? `<span class="start-btn on" aria-label="いまやっている">${ICON_PLAY}</span>`
+    return cur.focus === i ? `<button type="button" class="start-btn on" data-act="start" data-i="${i}" aria-label="${esc(EX[it.exId].name)}の次のセットをスタート">${ICON_PLAY}</button>`
       : `<button type="button" class="start-btn" data-act="start" data-i="${i}" aria-label="${esc(EX[it.exId].name)}をスタート">${ICON_PLAY}</button>`;
   }
   function loadHTML(it, ex) {
@@ -2895,7 +2898,7 @@ button { cursor: pointer; }
       case "start": {
         cur.focus = i;
         cur.nowEx = cur.items[i].exId;
-        if (restAtNow() && !(cur.doingAt >= restAtNow()) && Date.now() - restAtNow() < restSecOk() * 1000) { cur.restAt = restAtNow(); cur.doingAt = Date.now(); } // 休憩中に押した → すぐトレーニング中
+        cur.doingAt = Date.now(); // 押した時からトレーニング中（始める前でも休憩中でも）
         if (!cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
         const el = document.getElementById(`ex-${i}`);
