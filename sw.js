@@ -1,6 +1,6 @@
 // SPOTTER のオフライン対応
 // アプリ本体は「まずネット、だめなら保存した分」、文字のフォントは「保存した分を先に出して裏で更新」
-const CACHE = "spotter-v24";
+const CACHE = "spotter-v25";
 const CORE = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-64.png"];
 
 self.addEventListener("install", (e) => {
