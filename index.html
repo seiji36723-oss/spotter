@@ -2805,7 +2805,7 @@ button { cursor: pointer; }
       <div class="card"><h3>今日の内容</h3><div class="dt-grid">${dtypes}</div></div>
       <div class="card"><h3>コース</h3><div class="courses">${courses}</div></div>
       <div class="card"><h3>1回の時間</h3><div class="chips">${MINUTES.map((m) => chip("minutes", m, `<span class="n">${m}</span>分`, settings.minutes === m)).join("")}</div></div>
-      <div class="card"><h3>通知（休憩の終わり・早歩き）</h3>
+      <div class="card"><h3>通知（右上のタイマー・早歩き）</h3>
         ${perm === "granted" ? '<p class="fine">✓ オン</p>' : perm === "unsupported" ? '<p class="fine">この画面では通知を使えません（アプリ版で使えます）</p>' : `<button type="button" class="btn" data-act="notify-on">通知をオンにする</button>`}</div>
       <div class="card"><h3>ジムと使える器具</h3><div class="courses">${gyms}</div></div>
       <div class="card"><h3>データ</h3>
