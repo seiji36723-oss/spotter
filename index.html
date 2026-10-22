@@ -269,7 +269,7 @@ button { cursor: pointer; }
 .bm-bg { fill: var(--ink); }
 .bm-fg { fill: var(--bg); }
 .bm-dot { fill: var(--red); }
-.stat { flex: 0 1 auto; min-width: 0; box-sizing: border-box; height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 6px; border-radius: 999px; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; background: var(--st-wait); color: var(--st-wait-ink); } /* 右のタイマーと同じ高さ。状態が変わっても上のバーの高さを変えない */
+.stat { flex: 0 1 auto; min-width: 0; box-sizing: border-box; min-height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 6px; border-radius: 999px; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; background: var(--st-wait); color: var(--st-wait-ink); } /* 右のタイマーと同じ高さ。状態が変わっても上のバーの高さを変えない（文字を大きくする設定のときだけ縦に伸びる） */
 .stat > * { flex: 0 0 auto; }
 .stat-ic { width: 22px; height: 22px; }
 .stat-ic:empty { display: none; }
@@ -283,15 +283,15 @@ button { cursor: pointer; }
 .stat.cardio { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; row-gap: 1px; align-items: center; padding-top: 0; padding-bottom: 0; line-height: 1.1; } /* 有酸素：名前の下に目安 */
 .stat.cardio .stat-ic { grid-row: 1 / 3; }
 .stat.cardio .stat-l, .stat.cardio .stat-n { grid-column: 2; min-width: 0; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
-.stat.rest, .stat.doing { display: grid; grid-template-columns: auto auto; column-gap: 6px; row-gap: 1px; align-items: center; padding-top: 0; padding-bottom: 0; line-height: 1; } /* 休憩中・トレーニング中：上に小さく言葉、下に大きく時間 */
+.stat.rest, .stat.doing { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; row-gap: 1px; align-items: center; padding-top: 0; padding-bottom: 0; line-height: 1; } /* 休憩中・トレーニング中：上に小さく言葉、下に大きく時間 */
 .stat.rest .stat-ic, .stat.doing .stat-ic { grid-row: 1 / 3; }
-.stat.rest .stat-l, .stat.doing .stat-l { grid-column: 2; font-size: 10px; line-height: 1; }
+.stat.rest .stat-l, .stat.doing .stat-l { grid-column: 2; min-width: 0; font-size: 10px; line-height: 1; overflow: hidden; text-overflow: ellipsis; }
 .stat.rest .stat-t, .stat.doing .stat-t { grid-column: 2; font-size: 19px; line-height: 1; }
 .stat.rest { background: var(--st-rest); color: var(--st-rest-ink); }
 .stat.doing { background: var(--st-doing); color: var(--st-doing-ink); }
 .stat.done { background: var(--st-done); color: var(--st-done-ink); }
 @media (max-width: 370px) {
-  .stat { gap: 4px; padding: 3px 8px 3px 5px; height: 30px; }
+  .stat { gap: 4px; padding: 3px 8px 3px 5px; min-height: 30px; }
   .stat-ic { width: 20px; height: 20px; }
   .stat-l { font-size: 10px; }
   .stat-t { font-size: 14px; }
