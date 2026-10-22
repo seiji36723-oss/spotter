@@ -1608,7 +1608,8 @@ button { cursor: pointer; }
   const validSession = (s) => isObj(s) && s.id != null && isDate(s.date) && Array.isArray(s.items)
     && s.items.every((it) => isObj(it) && typeof it.exId === "string" && Array.isArray(it.sets)
       && it.sets.every((x) => isObj(x) && inRange(x.w, 0, 500) && inRange(x.r, 0, 999) && inRange(x.m, 0, 600)));
-  const validBody = (r) => isObj(r) && isDate(r.date) && inRange(r.weight, 20, 300);
+  const WEIGHT_MAX = 500; // 体重の上限（これより上はありえない）
+  const validBody = (r) => isObj(r) && isDate(r.date) && (r.weight == null || (inRange(r.weight, 0, WEIGHT_MAX) && r.weight > 0));
   const validWalk = (v) => v === true || (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 600);
   const validOff = (v) => v === true || v === "rain" || v === "cant" || v === "enough";
   const pickEntries = (o, ok) => Object.fromEntries(Object.entries(isObj(o) ? o : {}).filter(([k, v]) => isDate(k) && ok(v)));
@@ -1736,7 +1737,21 @@ button { cursor: pointer; }
   const staleCur = (c) => !c || c.ver !== 6 || (c.course || "belly") !== settings.course || (c.gym || "choco") !== settings.gym || c.items.some((it) => !EX[it.exId] || EX[it.exId].old || !usable(EX[it.exId]));
   const doneIn = (c) => !!c && c.items.some((it) => it.sets.some((x) => x.done));
   // 作りかけのメニューが今の設定と合わない時は作り直す。ただし完了したセットがあれば、その日の記録を終えるまで続ける
-  if (staleCur(cur) && !(doneIn(cur) && cur.items.every((it) => EX[it.exId]))) cur = null;
+  if (staleCur(cur) && !(doneIn(cur) && cur.items.every((it) => EX[it.exId]))) {
+    // アプリの更新でなくなった種目が入っていて続けられない時も、完了したセットは記録として残す
+    if (doneIn(cur)) {
+      const startedAt = cur.startedAt || cur.createdAt || Date.now();
+      const endedAt = cur.lastAt || startedAt;
+      const items = cur.items.map((it) => ({
+        exId: it.exId,
+        unit: it.rx.unit,
+        sets: it.sets.filter((x) => x.done).map((x) => (it.rx.unit === "min" ? { m: x.m } : { w: x.w, r: x.r })),
+      })).filter((it) => it.sets.length);
+      const kept = { v: 5, id: "s" + endedAt.toString(36), date: formatDateISO(new Date(startedAt)), type: cur.type === "off" ? "home" : cur.type === "strength" ? "strength" : "cardio", day: cur.day, interval: !!cur.interval, startedAt, endedAt, items };
+      if (validSession(kept)) { logs.push(kept); saveLogs(); }
+    }
+    cur = null;
+  }
 
   // ── 前回を少しでも上回る目標 ──
   // 前回の全セットが目標回数の上限に届いた → 1段階重く。届かなかった → 同じ重さで合計1回（プランクは5秒）でも多く
@@ -2966,7 +2981,7 @@ button { cursor: pointer; }
         break;
       case "body-save": {
         const w = parseFloat($("#inWeight").value);
-        if (!(w > 0)) { toast("体重を入れてください"); break; }
+        if (!(w > 0 && w <= WEIGHT_MAX)) { toast("体重を入れてください"); break; }
         const d = todayIso();
         body = body.filter((r) => r.date !== d).concat([{ date: d, weight: w }]);
         saveBody(); renderLog();
