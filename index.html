@@ -2027,6 +2027,11 @@ button { cursor: pointer; }
     cur.nowEx = it.exId;
     delete cur.doingAt;
   }
+  // 完了を取り消した：古い休憩の時刻が残らないようにする
+  function clearRest() { delete cur.restAt; delete cur.restSec; delete cur.doingAt; }
+  // 休憩を始めた時刻と目安の秒（時計が戻ったときは今にそろえる。壊れた値は使わない）
+  const restAtNow = () => (Number.isFinite(cur.restAt) ? Math.min(cur.restAt, Date.now()) : 0);
+  const restSecOk = () => (Number.isFinite(cur.restSec) && cur.restSec > 0 && cur.restSec <= 3600 ? cur.restSec : 90);
   function tickStat() {
     const el = $("#stat");
     if (!cur || !cur.items.length) { el.hidden = true; return; } // 種目のない日（完全休息など）は出さない
@@ -2037,14 +2042,13 @@ button { cursor: pointer; }
     if (it) n = ex.name.replace(/（.*）/, "");
     if (it && it.part === "cardio") { cls = "wait cardio"; l = n; t = ""; n = aimText(it.rx).replace(/<\/?b>| /g, "") || "有酸素"; }
     else if (it) {
-      const sec = cur.restAt && anyDone() ? Math.max(0, (Date.now() - cur.restAt) / 1000) : -1;
-      if (sec >= 0 && !(cur.doingAt >= cur.restAt) && sec >= cur.restSec) { // 目安を過ぎた → トレーニング中
-        cur.doingAt = cur.restAt + cur.restSec * 1000;
-        save(LS.current, cur);
-      }
+      const at = restAtNow(), rs = restSecOk();
+      const sec = at && anyDone() ? (Date.now() - at) / 1000 : -1;
+      // トレーニング中：休憩中に ▶ を押した時刻か、目安を過ぎた時刻から（ここでは保存しない。別のタブの記録を上書きしないため）
+      const doingFrom = Number.isFinite(cur.doingAt) && cur.doingAt >= at ? Math.min(cur.doingAt, Date.now()) : sec >= rs ? at + rs * 1000 : 0;
       if (sec < 0) { cls = "wait"; l = "次"; }
-      else if (cur.doingAt >= cur.restAt) { cls = "doing"; l = "セット"; t = fmtSec(Math.floor(Math.max(0, Date.now() - cur.doingAt) / 1000)); n = ""; }
-      else { cls = "rest"; l = "休憩"; t = `${fmtSec(Math.floor(sec))}<small>／${fmtSec(cur.restSec)}</small>`; n = ""; }
+      else if (doingFrom) { cls = "doing"; l = "セット"; t = fmtSec(Math.floor((Date.now() - doingFrom) / 1000)); n = ""; }
+      else { cls = "rest"; l = "休憩"; t = `${fmtSec(Math.floor(sec))}<small>／${fmtSec(rs)}</small>`; n = ""; }
     }
     el.hidden = false;
     el.className = `stat ${cls}`;
@@ -2871,7 +2875,7 @@ button { cursor: pointer; }
       case "start": {
         cur.focus = i;
         cur.nowEx = cur.items[i].exId;
-        if (cur.restAt && !(cur.doingAt >= cur.restAt) && Date.now() - cur.restAt < cur.restSec * 1000) cur.doingAt = Date.now(); // 休憩中に押した → すぐトレーニング中
+        if (restAtNow() && !(cur.doingAt >= restAtNow()) && Date.now() - restAtNow() < restSecOk() * 1000) { cur.restAt = restAtNow(); cur.doingAt = Date.now(); } // 休憩中に押した → すぐトレーニング中
         if (!cur.startedAt) cur.startedAt = Date.now();
         saveCur(); renderMenu();
         const el = document.getElementById(`ex-${i}`);
@@ -3041,7 +3045,7 @@ button { cursor: pointer; }
         if (st.done) cur.lastAt = Date.now();
         if (cur.focus === i && itemDone(cur.items[i])) cur.focus = null;
         if (st.done && !cur.startedAt) cur.startedAt = Date.now();
-        if (st.done) markRest(i); // セットを終えたら、上のバーが休憩中になる
+        if (st.done) markRest(i); else clearRest(); // セットを終えたら、上のバーが休憩中になる
         saveCur(); renderMenu();
         break;
       }
@@ -3052,7 +3056,7 @@ button { cursor: pointer; }
         if (!all) cur.lastAt = Date.now();
         if (!all && cur.focus === i) cur.focus = null;
         if (!all && !cur.startedAt) cur.startedAt = Date.now();
-        if (!all && it.part !== "cardio") markRest(i);
+        if (!all && it.part !== "cardio") markRest(i); else if (all) clearRest();
         saveCur(); renderMenu();
         break;
       }
