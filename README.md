@@ -8,6 +8,13 @@
 - 有酸素と毎日の早歩きは速さを指示し、時間は目安を見ながら自分で入れる
 - 週1回の体重を記録し、変化がなければ有酸素や食事の見直しを提案
 
+## 通常版と改訂版
+- 通常版：https://seiji36723-oss.github.io/spotter/ （ふだん使う版。Android アプリもこちら）
+- 改訂版：https://seiji36723-oss.github.io/spotter/kaitei/ （手直しを先に入れて試す版）
+
+改訂版の記録は通常版とは別に保存されます（初めて開いた時だけ通常版の記録を写します）。
+改訂版の内容を通常版に入れる時は `sh sync-kaitei.sh` を実行し、Android アプリを作り直して push します。
+
 ## 使い方（iPhone）
 1. Safari でアプリのURLを開く
 2. 共有ボタン →「ホーム画面に追加」
@@ -17,6 +24,8 @@
 
 ## ファイル
 - `index.html` … アプリ本体（1ファイル）
+- `kaitei/` … 改訂版（`index.html`・`sw.js`・`manifest.webmanifest`・`icons/` の改訂版用）
+- `sync-kaitei.sh` … 改訂版を通常版に写す
 - `manifest.webmanifest` … アプリの名前・アイコンの設定
 - `sw.js` … オフラインで動くようにするしくみ
 - `icons/` … アイコン画像

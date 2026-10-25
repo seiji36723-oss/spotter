@@ -982,11 +982,23 @@ button { cursor: pointer; }
 
   // ── 保存（localStorage。使えない環境ではメモリだけで動く） ──
   const LS = { settings: "cz_settings", logs: "cz_logs", current: "cz_current", week: "cz_week" };
+  // 改訂版（/kaitei/）は通常版と記録を分ける。初めて開いた時だけ通常版の記録を写す
+  const PFX = /\/kaitei\//.test(location.pathname) ? "kaitei_" : "";
+  if (PFX) {
+    try {
+      if (!localStorage.getItem(PFX + "copied")) {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith("cz_")) keys.push(k); }
+        keys.forEach((k) => localStorage.setItem(PFX + k, localStorage.getItem(k)));
+        localStorage.setItem(PFX + "copied", "1");
+      }
+    } catch (e) { /* 写せなくても続ける */ }
+  }
   const load = (k, fb) => {
-    try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch (e) { return fb; }
+    try { const v = localStorage.getItem(PFX + k); return v ? JSON.parse(v) : fb; } catch (e) { return fb; }
   };
   const save = (k, v) => {
-    try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 保存できなくても続ける */ }
+    try { localStorage.setItem(PFX + k, JSON.stringify(v)); } catch (e) { /* 保存できなくても続ける */ }
   };
 
   const $ = (s, r = document) => r.querySelector(s);
@@ -1583,7 +1595,7 @@ button { cursor: pointer; }
   let offDays = load(LS.off, {}); // 「今日は行けない」と入力した日
   let walks = load(LS.walk, {}); // 早歩きをした日
   let body = load(LS.body, []); // 体重（週1回）
-  try { localStorage.removeItem(LS.week); } catch (e) { /* 前の版の週メニューはもう使わない */ }
+  try { localStorage.removeItem(PFX + LS.week); } catch (e) { /* 前の版の週メニューはもう使わない */ }
   let tab = "menu";
   let pendingRegen = null; // 記録中にメニューを作り直そうとした時の確認
   let pendingDelete = null; // 削除の確認（日付 or "all"）
@@ -3176,7 +3188,7 @@ button { cursor: pointer; }
         walks = {};
         body = [];
         Object.assign(settings, defaultSettings());
-        try { Object.values(LS).forEach((k) => localStorage.removeItem(k)); } catch (err) { /* 無視 */ }
+        try { Object.values(LS).forEach((k) => localStorage.removeItem(PFX + k)); } catch (err) { /* 無視 */ }
         cur = null;
         ensureToday();
         pendingDelete = null;
