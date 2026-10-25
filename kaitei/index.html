@@ -106,6 +106,7 @@ button { cursor: pointer; }
 .ft-ctl { display: grid; place-items: center; width: 32px; height: 32px; border: 1.5px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink); }
 .ft-ctl svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .ft-ctl svg .fill { fill: currentColor; stroke: none; }
+.stat-skip { flex: 0 0 auto; margin-left: -6px; } /* 休憩・3・2・1 を飛ばす（飛ばせる時だけ出る） */
 .top-in { flex-wrap: nowrap; }
 @media (max-width: 370px) {
   .top-in .brand-mark { width: 26px; height: 26px; }
@@ -113,6 +114,8 @@ button { cursor: pointer; }
   .ft-pill { height: 30px; padding: 0 8px 0 7px; gap: 4px; }
   .ft-pill b { font-size: 16px; }
   .ft-ctl { width: 28px; height: 28px; }
+  .stat-skip { margin-left: -5px; }
+  .stat-pre { display: none; }
 }
 .ic-btn { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); }
 .ic-btn.big { width: 80px; height: 80px; background: var(--ink); color: var(--bg); }
@@ -948,6 +951,7 @@ button { cursor: pointer; }
     <div id="stat" class="stat" role="status" hidden>
       <span id="statIc" class="stat-ic"></span>      <span id="statL" class="stat-l"></span><b id="statT" class="stat-t"></b><span id="statN" class="stat-n"></span>
     </div>
+    <button type="button" id="statSkip" class="ft-ctl stat-skip" data-act="skip-now" aria-label="休憩を飛ばす" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path class="fill" d="M5.5 5.5v13l9-6.5zM16 5.5h2.6v13H16z"/></svg></button>
     <!-- タイマー（右端）：0 から数える。▶/❚❚ で動かす・止める、↺ で 0 に戻す -->
     <span class="ft-box">
       <button type="button" id="ftPill" class="ft-pill" data-act="ft-go" aria-label="タイマー">
@@ -2208,6 +2212,32 @@ button { cursor: pointer; }
     $("#ftHint").hidden = !(pkNeedTap && !p.pausedAt);
     return true;
   }
+  // 種目の ▶：押した時からトレーニング中（始める前でも休憩中でも）。秒の種目は、残りのセットを続けて計る
+  function startItem(i) {
+    cur.focus = i;
+    cur.nowEx = cur.items[i].exId;
+    cur.doingAt = Date.now();
+    if (!cur.startedAt) cur.startedAt = Date.now();
+    unlockAudio();
+    if (cur.items[i].rx.unit === "sec") pkStart(i); else pkStop();
+    saveCur(); renderMenu();
+  }
+  // 上の ⏭：プランクの休憩・3・2・1 は残りを飛ばして次の段階へ。ふつうの休憩は、いまの種目の次のセットを始める
+  function skipNow() {
+    unlockAudio();
+    const a = pkStage();
+    if (a && !a.fin) {
+      const g = a.segs[a.s];
+      if (g.ph === "set") return; // セット中は「完了」で打ち切る
+      a.p.t0 -= (a.starts[a.s] + g.len - a.e) * 1000;
+      saveCur(); pkRun(); pkLoop(); tickStat();
+      return;
+    }
+    const k = nowIdx();
+    if (k == null || $("#statSkip").hidden) return;
+    startItem(k);
+    tickStat();
+  }
   // 種目の並び：上のアイコンで選んだ種目（いまやる）→ まだの筋トレ → まだの有酸素 → 終わったもの
   const itemOrder = () => cur.items.map((_, i) => i).sort((a, b) => itemDone(cur.items[a]) - itemDone(cur.items[b])
     || (b === cur.focus) - (a === cur.focus) || (cur.items[a].part === "cardio") - (cur.items[b].part === "cardio") || a - b);
@@ -2240,6 +2270,7 @@ button { cursor: pointer; }
     const it = k == null ? null : cur.items[k];
     const ex = it ? EX[it.exId] : null;
     let cls = "done", l = "", t = "", n = "全部完了"; // l：小さいラベル、t：太い時間、n：種目名など
+    let skip = ""; // 飛ばせる時の言葉（ボタンの読み上げ）。空なら出さない
     if (it) n = ex.name.replace(/（.*）/, "");
     const started = it && it.exId === cur.nowEx && Number.isFinite(cur.doingAt) && cur.doingAt >= restAtNow(); // ▶ で始めた
     // プランクを ▶ で計り終わった（完了を押すまで）：最後のセットが終わった時から休憩
@@ -2248,8 +2279,8 @@ button { cursor: pointer; }
     else if (it && it.part === "cardio") { cls = "wait cardio"; l = n; t = ""; n = aimText(it.rx).replace(/<\/?b>| /g, "") || "有酸素"; }
     else if (it && pk) {
       const g = pk.segs[pk.s];
-      if (g.ph === "rest") { cls = "rest"; l = `休憩・目安${fmtSec(pk.p.rs)}`; t = fmtSec(Math.floor(pk.e - pk.starts[pk.s])); }
-      else { cls = "doing"; l = "セット中"; t = fmtSec(Math.floor(pk.e - pk.starts[g.ph === "prep" ? pk.s : pk.s - 1])); }
+      if (g.ph === "rest") { cls = "rest"; l = `休憩・目安${fmtSec(pk.p.rs)}`; t = fmtSec(Math.floor(pk.e - pk.starts[pk.s])); skip = "休憩を飛ばす"; }
+      else { cls = "doing"; l = "セット中"; t = fmtSec(Math.floor(pk.e - pk.starts[g.ph === "prep" ? pk.s : pk.s - 1])); if (g.ph === "prep") skip = "3・2・1を飛ばす"; }
       n = "";
     } else if (it && pkFin) {
       cls = "rest"; l = `休憩・目安${fmtSec(pa.p.rs)}`; t = fmtSec(Math.floor(Math.max(0, Date.now() - pa.lastEnd) / 1000)); n = "";
@@ -2260,13 +2291,21 @@ button { cursor: pointer; }
       const doingFrom = Number.isFinite(cur.doingAt) && cur.doingAt >= at ? Math.min(cur.doingAt, Date.now()) : sec >= rs ? at + rs * 1000 : 0;
       if (sec < 0) { cls = "wait"; l = "次"; }
       else if (doingFrom) { cls = "doing"; l = "セット中"; t = fmtSec(Math.floor((Date.now() - doingFrom) / 1000)); n = ""; }
-      else { cls = "rest"; l = `休憩・目安${fmtSec(rs)}`; t = fmtSec(Math.floor(sec)); n = ""; }
+      else { cls = "rest"; l = `休憩・目安${fmtSec(rs)}`; t = fmtSec(Math.floor(sec)); n = ""; skip = "休憩を飛ばして次のセットへ"; }
     }
+    const sb = $("#statSkip");
+    sb.hidden = !skip;
+    if (skip && sb.getAttribute("aria-label") !== skip) sb.setAttribute("aria-label", skip);
     el.hidden = false;
     el.className = `stat ${cls}`;
     const ic = ex ? ex.icon || "" : "CHECK";
     if (el.dataset.ic !== ic) { el.dataset.ic = ic; $("#statIc").innerHTML = ic === "CHECK" ? CHECK_SVG : ic ? pictoSVG(ic) : ""; }
-    $("#statL").textContent = l;
+    const sl = $("#statL");
+    if (sl.dataset.l !== l) { // 「休憩・」は狭い画面では隠す（色で休憩とわかる）
+      sl.dataset.l = l;
+      sl.textContent = l.startsWith("休憩・") ? l.slice(3) : l;
+      if (l.startsWith("休憩・")) { const pre = document.createElement("span"); pre.className = "stat-pre"; pre.textContent = "休憩・"; sl.prepend(pre); }
+    }
     if (el.dataset.t !== t) { el.dataset.t = t; $("#statT").innerHTML = t; }
     $("#statN").textContent = n;
   }
@@ -3087,14 +3126,11 @@ button { cursor: pointer; }
         pkStop();
         ftReset();
         break;
+      case "skip-now":
+        skipNow();
+        break;
       case "start": {
-        cur.focus = i;
-        cur.nowEx = cur.items[i].exId;
-        cur.doingAt = Date.now(); // 押した時からトレーニング中（始める前でも休憩中でも）
-        if (!cur.startedAt) cur.startedAt = Date.now();
-        unlockAudio();
-        if (cur.items[i].rx.unit === "sec") pkStart(i); else pkStop(); // 秒の種目は、残りのセットを続けて計る
-        saveCur(); renderMenu();
+        startItem(i);
         const el = document.getElementById(`ex-${i}`);
         if (el) el.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
         break;
