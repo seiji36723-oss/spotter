@@ -2226,6 +2226,8 @@ button { cursor: pointer; }
     let cls = "done", l = "", t = "", n = "全部完了"; // l：小さいラベル、t：太い時間、n：種目名など
     if (it) n = ex.name.replace(/（.*）/, "");
     const started = it && it.exId === cur.nowEx && Number.isFinite(cur.doingAt) && cur.doingAt >= restAtNow(); // ▶ で始めた
+    // プランクを ▶ で計り終わった（完了を押すまで）：最後のセットが終わった時から休憩
+    const pkFin = !pk && pa && pa.fin && pa.it === it && Number.isFinite(cur.doingAt) && pa.p.t0 >= cur.doingAt;
     if (it && it.part === "cardio" && started) { cls = "doing"; l = n; t = fmtSec(Math.floor((Date.now() - Math.min(cur.doingAt, Date.now())) / 1000)); n = ""; }
     else if (it && it.part === "cardio") { cls = "wait cardio"; l = n; t = ""; n = aimText(it.rx).replace(/<\/?b>| /g, "") || "有酸素"; }
     else if (it && pk) {
@@ -2233,6 +2235,8 @@ button { cursor: pointer; }
       if (g.ph === "rest") { cls = "rest"; l = `休憩・目安${fmtSec(pk.p.rs)}`; t = fmtSec(Math.floor(pk.e - pk.starts[pk.s])); }
       else { cls = "doing"; l = "セット中"; t = fmtSec(Math.floor(pk.e - pk.starts[g.ph === "prep" ? pk.s : pk.s - 1])); }
       n = "";
+    } else if (it && pkFin) {
+      cls = "rest"; l = `休憩・目安${fmtSec(pa.p.rs)}`; t = fmtSec(Math.floor(Math.max(0, Date.now() - pa.lastEnd) / 1000)); n = "";
     } else if (it) {
       const at = restAtNow(), rs = restSecOk();
       const sec = at && anyDone() ? (Date.now() - at) / 1000 : started ? 0 : -1;
@@ -3063,6 +3067,7 @@ button { cursor: pointer; }
         ftGo();
         break;
       case "ft-reset":
+        if (pkOn()) delete cur.doingAt; // プランクをやめた：「セット中」も終わり（保存は pkStop で）
         pkStop();
         ftReset();
         break;
