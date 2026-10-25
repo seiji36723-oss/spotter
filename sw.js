@@ -1,7 +1,7 @@
 // SPOTTER のオフライン対応
 // アプリ本体は「まずネット、だめなら保存した分」、文字のフォントは「保存した分を先に出して裏で更新」
 // 改訂版（kaitei/）は自分の sw.js で動くので、ここでは触らない
-const CACHE = "spotter-v27";
+const CACHE = "spotter-v28";
 const CORE = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-64.png"];
 
 self.addEventListener("install", (e) => {
