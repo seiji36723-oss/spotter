@@ -94,11 +94,15 @@ button { cursor: pointer; }
 /* ── ヘッダー ── */
 .top { padding-top: env(safe-area-inset-top, 0px); position: sticky; top: 0; z-index: 6; background: var(--bg); }
 .top-in { padding-block: 10px 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
-.ft-box { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
+.ft-box { position: relative; margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
 .ft-pill { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 11px 0 9px; border: 0; border-radius: 999px; background: var(--surface-2); color: var(--ink); }
 .ft-pill svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .ft-pill b { font-family: var(--font-num); font-size: 18px; line-height: 1; font-variant-numeric: tabular-nums; }
 .ft-pill.run { background: var(--ink); color: var(--bg); }
+.ft-lab { display: none; font-size: 10px; font-weight: 700; line-height: 1; white-space: nowrap; } /* プランクの計測中：段階（準備・1/2・休憩） */
+.ft-hint { position: absolute; right: 0; top: 100%; z-index: 1; margin-top: 2px; padding: 2px 7px; border-radius: 6px; background: var(--ink); color: var(--bg); font-size: 10px; font-weight: 700; line-height: 1.3; white-space: nowrap; pointer-events: none; }
+.ft-pill.pk svg { display: none; }
+.ft-pill.pk .ft-lab { display: inline; }
 .ft-ctl { display: grid; place-items: center; width: 32px; height: 32px; border: 1.5px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink); }
 .ft-ctl svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .ft-ctl svg .fill { fill: currentColor; stroke: none; }
@@ -752,6 +756,9 @@ button { cursor: pointer; }
 }
 .check svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .check[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.check.up { background: var(--h3); border-color: var(--h3); color: #fff; box-shadow: 0 0 0 3px var(--h1); } /* プランクの時間になった：押すまで光る */
+@media (prefers-reduced-motion: no-preference) { .check.up { animation: chk-up 1s ease-in-out infinite; } }
+@keyframes chk-up { 0%, 100% { box-shadow: 0 0 0 2px var(--h1); } 50% { box-shadow: 0 0 0 7px var(--h2); } }
 .set-row.done .field select { opacity: .5; }
 
 .ex-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; }
@@ -944,10 +951,11 @@ button { cursor: pointer; }
     <!-- タイマー（右端）：0 から数える。▶/❚❚ で動かす・止める、↺ で 0 に戻す -->
     <span class="ft-box">
       <button type="button" id="ftPill" class="ft-pill" data-act="ft-go" aria-label="タイマー">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5M12 2.5V5"/></svg><b id="ftTime">0:00</b>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5M12 2.5V5"/></svg><small id="ftLab" class="ft-lab"></small><b id="ftTime">0:00</b>
       </button>
       <button type="button" id="ftGo" class="ft-ctl" data-act="ft-go" aria-label="タイマーをスタート"></button>
       <button type="button" id="ftReset" class="ft-ctl" data-act="ft-reset" aria-label="タイマーを0に戻す"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg></button>
+      <small id="ftHint" class="ft-hint" hidden>音を出すには画面をタップ</small>
     </span>
   </div>
 </header>
@@ -1575,7 +1583,7 @@ button { cursor: pointer; }
   };
   const SKIP_LABEL = { rain: "雨で行けない", cant: "できない", enough: "今日はもういいや" };
   const MINUTES = [45, 60, 75, 90];
-  const REST_SEC = { multi: 150, single: 75, abs: 75 }; // 休憩：多関節2分30秒、腹筋・単関節1分15秒
+  const REST_SEC = { multi: 90, single: 75, abs: 75 }; // 休憩：多関節1分30秒、腹筋・単関節1分15秒
   const MIN_PER = { multi: 1 + REST_SEC.multi / 60, single: 1 + REST_SEC.single / 60, abs: 0.75 + REST_SEC.abs / 60 }; // 1セット＋休憩の分
   // 毎日の早歩き：時間と速さで指示（10分でだいたい1,100〜1,200歩）
   const WALK = { min: 10, speed: "時速5.5〜6km", pace: "1分に110〜120歩・少し息が上がる速さ" };
@@ -2017,6 +2025,7 @@ button { cursor: pointer; }
   const ftRunning = () => ft.since > 0;
   const ftElapsed = () => ft.acc + (ftRunning() ? (Date.now() - ft.since) / 1000 : 0);
   function ftTick() {
+    if (pkTick()) return; // プランクを計っている間は、そちらが右上に出す
     const e = ftElapsed();
     const show = ft.total ? Math.max(0, Math.ceil(ft.total - e)) : Math.floor(e);
     const tm = $("#ftTime");
@@ -2033,6 +2042,7 @@ button { cursor: pointer; }
     }
   }
   function ftGo() {
+    if (pkOn()) { pkToggle(); return; } // プランク計測中の ❚❚／▶ は、一時停止と再開
     if (ftRunning()) { ft.acc = ftElapsed(); ft.since = 0; clearInterval(ft.id); }
     else {
       if (ft.total && ft.acc >= ft.total) ft.acc = 0;
@@ -2042,6 +2052,162 @@ button { cursor: pointer; }
     ftTick();
   }
   function ftReset() { clearInterval(ft.id); ft.acc = 0; ft.since = 0; ft.rang = false; ftTick(); }
+  // ── 秒で数える種目（プランク）の連続計測：▶ を押すと、残りのセットを「準備3秒 → セット → 休憩 → …」と続けて計る ──
+  // cur.pk = { exId, js:[セット番号], secs:[セットの秒], rs:休憩の秒, t0:始めた時刻（一時停止した分だけ後ろへずらす）, pausedAt:止めた時刻（0なら動いている）, ack:[押して消した光のセット番号] }
+  // 段階・何セット目か・光らせるセットは、t0 と pausedAt から Date.now() で毎回計算する。時間が流れるだけでは cur を保存しない
+  // （古いタブが、別のタブの「完了」などを上書きしないため）。保存するのは ▶・❚❚・↺・完了など、人が押した操作のときだけ
+  const PK_PREP = 3;
+  let pkId = 0, pkLive = false, pkWake = null, pkAudioPrev = null, pkBeepKey = "", pkDead = "", pkNeedTap = false;
+  let pkSeen = { key: "", n: 0, at: 0 }; // このタブで見た：どの計測か・終わったセットの数・最後に見た時刻
+  const pkOk = (p) => {
+    const num = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi;
+    return !!p && typeof p === "object" && typeof p.exId === "string" && Array.isArray(p.secs) && Array.isArray(p.js)
+      && p.secs.length >= 1 && p.secs.length <= 30 && p.js.length === p.secs.length
+      && p.secs.every((v) => num(v, 1, 3600)) && p.js.every((v) => Number.isInteger(v) && v >= 0)
+      && num(p.rs, 1, 3600) && Number.isFinite(p.t0) && Number.isFinite(p.pausedAt) && p.pausedAt >= 0;
+  };
+  const pkKey = (p) => `${p.exId}:${p.t0}`;
+  const pkSegs = (secs, rs, tr) => secs.flatMap((len, k) => [{ ph: "prep", k, len: PK_PREP }, { ph: "set", k, len }].concat(k < secs.length - 1 || tr ? [{ ph: "rest", k, len: rs }] : [])); // tr：先のセットを外して、いまの休憩が最後になった
+  // いまの段階を時刻から出す（保存はしない）。いまの種目にあるセットだけを数える（−セットで減ったら、計る残りも減る）
+  function pkCalc(p, it, now) {
+    const js = [], secs = [];
+    p.js.forEach((j, k) => { if (j < it.sets.length) { js.push(j); secs.push(p.secs[k]); } });
+    const segs = pkSegs(secs, p.rs, p.tr === true), starts = [];
+    segs.reduce((a, g) => (starts.push(a), a + g.len), 0);
+    const e = Math.max(0, (Math.min(p.pausedAt || now, now) - p.t0) / 1000);
+    let s = 0;
+    while (s < segs.length && e >= starts[s] + segs[s].len) s++;
+    const upJ = []; let lastEnd = 0;
+    for (let q = 0; q < s; q++) if (segs[q].ph === "set") { upJ.push(js[segs[q].k]); lastEnd = p.t0 + (starts[q] + segs[q].len) * 1000; }
+    return { p, it, now, js, segs, starts, e, s, fin: s >= segs.length, upJ, lastEnd };
+  }
+  // 計測の今の状態。使えない（なし・壊れている・種目が外れた・全部完了・時計が戻った）なら null。終わっていれば fin: true
+  function pkStage() {
+    const p = cur && cur.pk;
+    if (!pkOk(p)) return null;
+    const it = cur.items.find((x) => x.exId === p.exId);
+    const now = Date.now();
+    if (!it || itemDone(it) || p.t0 > now || pkDead === pkKey(p)) return null;
+    return pkCalc(p, it, now);
+  }
+  const pkOn = () => { const a = pkStage(); return !!a && !a.fin; };
+  // 時間になって、まだ押していないセット（完了ボタンを光らせる）
+  function pkUp(it, j) {
+    const p = cur && cur.pk;
+    if (!pkOk(p) || p.exId !== it.exId || it.sets[j].done || (Array.isArray(p.ack) && p.ack.includes(j))) return false;
+    return pkCalc(p, it, Date.now()).upJ.includes(j);
+  }
+  // 完了ボタンを押した：その光は消す（保存は押した操作のほうでする）
+  function pkAck(it, js) {
+    const p = cur && cur.pk;
+    if (pkOk(p) && p.exId === it.exId) p.ack = [...new Set((Array.isArray(p.ack) ? p.ack : []).filter(Number.isInteger).concat(js))]; // 同じ番号は重ねない
+  }
+  // 計っているセットの完了を押した：そのセットの残りを打ち切って、すぐ次の段階へ（t0 を前へずらす。最後のセットなら終わり）。
+  // 先のセットなら計る対象から外す。前のセット（光っている完了）なら何もしない。保存は押した操作のほうでする
+  function pkSkip(it, j) {
+    const a = pkStage();
+    if (!a || a.fin || a.p.exId !== it.exId) return;
+    const k = a.js.indexOf(j), p = a.p, g = a.segs[a.s];
+    if (k < 0 || k < g.k || (k === g.k && g.ph === "rest")) return;
+    if (k === g.k) { // いま計っているセット：打ち切った分だけ先へ進める（時間切れの音は鳴らさない：開始時刻が変わるので、このタブは「新しい計測」と見て鳴らさない）
+      const si = a.segs.findIndex((x) => x.ph === "set" && x.k === k);
+      p.t0 -= (a.starts[si] + a.segs[si].len - a.e) * 1000;
+      return;
+    }
+    if (g.ph === "rest" && g.k === k - 1 && k === a.js.length - 1) p.tr = true; // 最後のセットを外す：いまの休憩はそのまま続けて最後にする
+    const r = p.js.indexOf(j);
+    p.js.splice(r, 1); p.secs.splice(r, 1);
+  }
+  // 画面が消えないように（対応していない・断られたときは何もしない）
+  function pkLock() {
+    try {
+      const a = pkStage();
+      const want = !!a && !a.fin && !a.p.pausedAt;
+      if (!want) { if (pkWake) { pkWake.release().catch(() => {}); pkWake = null; } return; }
+      if (pkWake || !navigator.wakeLock) return;
+      navigator.wakeLock.request("screen").then((w) => {
+        if (pkWake || !pkOn() || cur.pk.pausedAt) { w.release().catch(() => {}); return; }
+        pkWake = w;
+        w.addEventListener("release", () => { if (pkWake === w) pkWake = null; });
+      }).catch(() => {});
+    } catch (e) { /* 使えなくても続ける */ }
+  }
+  // 動かす：iPhone の消音スイッチでも鳴るように音の種類を playback に（対応している端末だけ）
+  function pkRun() {
+    clearInterval(pkId); pkId = 0;
+    if (!pkOn()) return;
+    pkLive = true;
+    if (!cur.pk.pausedAt) {
+      try { if (navigator.audioSession && pkAudioPrev === null) { pkAudioPrev = navigator.audioSession.type; navigator.audioSession.type = "playback"; } } catch (e) { /* 対応していない端末 */ }
+      pkId = setInterval(pkLoop, 250);
+    }
+    pkLock();
+  }
+  // 終わり・やめた：タイマーの後始末（記録は消さない）
+  function pkEnd() {
+    clearInterval(pkId); pkId = 0; pkLive = false; pkBeepKey = "";
+    try { if (pkAudioPrev !== null && navigator.audioSession) navigator.audioSession.type = pkAudioPrev; } catch (e) { /* 対応していない端末 */ }
+    pkAudioPrev = null;
+    pkLock();
+    const pill = $("#ftPill");
+    if (pill) pill.classList.remove("pk");
+    const hint = $("#ftHint");
+    if (hint) hint.hidden = true; // 計っていないときは「タップ」のヒントも隠す
+  }
+  // 人が止めた（↺・別の種目の ▶）：計っている最中だけ消す。終わって光っているセットはそのまま
+  function pkStop() {
+    if (pkOn()) { delete cur.pk; saveCur(); }
+    const was = pkLive;
+    pkEnd();
+    if (was) ftTick();
+  }
+  function pkStart(i) {
+    const it = cur.items[i];
+    delete cur.pk; pkEnd(); ftReset(); // 右上の「0から数える」はいったん止める
+    const js = [], secs = [];
+    it.sets.forEach((x, j) => { if (!x.done) { js.push(j); secs.push(Math.max(1, Math.min(3600, Number(x.r) || 20))); } });
+    if (!js.length) return;
+    cur.pk = { exId: it.exId, js, secs, rs: (REST_SEC[EX[it.exId].kind] || 90) + (it.restExtra || 0), t0: Date.now(), pausedAt: 0, ack: [] };
+    pkRun(); pkLoop();
+  }
+  function pkToggle() {
+    const p = cur.pk, now = Date.now();
+    if (p.pausedAt) { p.t0 += now - Math.min(p.pausedAt, now); p.pausedAt = 0; unlockAudio(); } else p.pausedAt = now;
+    saveCur(); pkRun(); pkLoop();
+  }
+  const pkLoop = () => { if (!pkTick()) ftTick(); };
+  // 右上に出す。計っている間は true（ftTick はそのまま戻る）。ここでは cur を保存しない
+  function pkTick() {
+    const a = pkStage();
+    if (!a) {
+      if (pkLive) { pkEnd(); ftTick(); }
+      return false;
+    }
+    const { p, it, now } = a, key = pkKey(p);
+    if (pkSeen.key === key && now < pkSeen.at - 2000) { pkDead = key; pkEnd(); return false; } // 時計が戻った：やめた形にして、同じセットで鳴らし直さない
+    const first = pkSeen.key !== key;
+    const grew = !first && a.upJ.length > pkSeen.n;
+    if (first) pkSeen = { key, n: a.upJ.length, at: now }; else { pkSeen.at = now; if (grew) pkSeen.n = a.upJ.length; }
+    if (grew) { // セットの時間になった：音・振動（20秒以上前なら鳴らさない）と、完了ボタンを光らせる
+      if (now - a.lastEnd < 20000) alarm("プランク", `${a.upJ[a.upJ.length - 1] + 1}セット目、時間です`);
+      if (tab === "menu") renderMenu();
+    }
+    if (a.fin) { pkEnd(); return false; } // 全部計り終わった：右上は「0から数える」に戻る
+    if (!pkLive) pkRun(); // −セットで終わった形にしたあと ＋セットで時間の中に戻った：動かし直す
+    const g = a.segs[a.s], left = Math.max(1, Math.ceil(g.len - (a.e - a.starts[a.s])));
+    const bk = `${a.s}:${left}`;
+    if (g.ph === "prep" && bk !== pkBeepKey && !p.pausedAt) beep(1); // 3・2・1 の短い音
+    pkBeepKey = bk;
+    const tm = $("#ftTime"), pill = $("#ftPill"), go = $("#ftGo");
+    $("#ftLab").textContent = g.ph === "prep" ? "準備" : g.ph === "set" ? `${a.js[g.k] + 1}/${it.sets.length}` : "休憩";
+    tm.textContent = g.ph === "prep" ? String(left) : fmtSec(left);
+    pill.classList.add("pk");
+    pill.classList.toggle("run", !p.pausedAt);
+    go.innerHTML = p.pausedAt ? ICON_PLAY : ICON_PAUSE;
+    go.setAttribute("aria-label", p.pausedAt ? "プランクを再開" : "プランクを一時停止");
+    $("#ftHint").hidden = !(pkNeedTap && !p.pausedAt);
+    return true;
+  }
   // 種目の並び：上のアイコンで選んだ種目（いまやる）→ まだの筋トレ → まだの有酸素 → 終わったもの
   const itemOrder = () => cur.items.map((_, i) => i).sort((a, b) => itemDone(cur.items[a]) - itemDone(cur.items[b])
     || (b === cur.focus) - (a === cur.focus) || (cur.items[a].part === "cardio") - (cur.items[b].part === "cardio") || a - b);
@@ -2068,15 +2234,26 @@ button { cursor: pointer; }
   function tickStat() {
     const el = $("#stat");
     if (!cur || !cur.items.length) { el.hidden = true; return; } // 種目のない日（完全休息など）は出さない
-    const k = nowIdx();
+    const pa = pkStage(); // プランクを計っている間は、右上と同じ段階を出す
+    const pk = pa && !pa.fin ? pa : null;
+    const k = pk ? cur.items.indexOf(pk.it) : nowIdx();
     const it = k == null ? null : cur.items[k];
     const ex = it ? EX[it.exId] : null;
     let cls = "done", l = "", t = "", n = "全部完了"; // l：小さいラベル、t：太い時間、n：種目名など
     if (it) n = ex.name.replace(/（.*）/, "");
     const started = it && it.exId === cur.nowEx && Number.isFinite(cur.doingAt) && cur.doingAt >= restAtNow(); // ▶ で始めた
+    // プランクを ▶ で計り終わった（完了を押すまで）：最後のセットが終わった時から休憩
+    const pkFin = !pk && pa && pa.fin && pa.it === it && !(Number.isFinite(cur.doingAt) && cur.doingAt > pa.lastEnd); // 終わったあとに ▶ を押していなければ
     if (it && it.part === "cardio" && started) { cls = "doing"; l = n; t = fmtSec(Math.floor((Date.now() - Math.min(cur.doingAt, Date.now())) / 1000)); n = ""; }
     else if (it && it.part === "cardio") { cls = "wait cardio"; l = n; t = ""; n = aimText(it.rx).replace(/<\/?b>| /g, "") || "有酸素"; }
-    else if (it) {
+    else if (it && pk) {
+      const g = pk.segs[pk.s];
+      if (g.ph === "rest") { cls = "rest"; l = `休憩・目安${fmtSec(pk.p.rs)}`; t = fmtSec(Math.floor(pk.e - pk.starts[pk.s])); }
+      else { cls = "doing"; l = "セット中"; t = fmtSec(Math.floor(pk.e - pk.starts[g.ph === "prep" ? pk.s : pk.s - 1])); }
+      n = "";
+    } else if (it && pkFin) {
+      cls = "rest"; l = `休憩・目安${fmtSec(pa.p.rs)}`; t = fmtSec(Math.floor(Math.max(0, Date.now() - pa.lastEnd) / 1000)); n = "";
+    } else if (it) {
       const at = restAtNow(), rs = restSecOk();
       const sec = at && anyDone() ? (Date.now() - at) / 1000 : started ? 0 : -1;
       // トレーニング中：休憩中に ▶ を押した時刻か、目安を過ぎた時刻から（ここでは保存しない。別のタブの記録を上書きしないため）
@@ -2199,7 +2376,7 @@ button { cursor: pointer; }
     return `<div class="set-row${st.done ? " done" : ""}">
       <span class="set-no">${j + 1}セット目</span>
       ${wTag}<label class="field">${selHTML(it, i, j)}<span class="u">${unitOf(it)}</span></label>
-      <button type="button" class="check" data-act="check" data-i="${i}" data-j="${j}" aria-pressed="${st.done}" aria-label="${j + 1}セット目を${st.done ? "未完了に戻す" : "完了にする"}">${CHECK_SVG}<span>${st.done ? "済" : "完了"}</span></button>
+      <button type="button" class="check${pkUp(it, j) ? " up" : ""}" data-act="check" data-i="${i}" data-j="${j}" aria-pressed="${st.done}" aria-label="${j + 1}セット目を${st.done ? "未完了に戻す" : "完了にする"}">${CHECK_SVG}<span>${st.done ? "済" : "完了"}</span></button>
     </div>`;
   }
   const ROLE = { main: "メイン", acc: "補助", extra: "追加", abs: "腹筋", cardio: "筋トレ後の有酸素", "cardio-day": "有酸素", home: "自宅" };
@@ -2892,6 +3069,7 @@ button { cursor: pointer; }
   // ── イベント ──
   document.addEventListener("click", (e) => {
     unlockAudio();
+    if (pkNeedTap) { pkNeedTap = false; $("#ftHint").hidden = true; } // タップしたので音が出せる
     const t = e.target.closest("[data-act], [data-tab]");
     if (!t) return;
     if (t.dataset.tab) { switchTab(t.dataset.tab); return; }
@@ -2905,6 +3083,8 @@ button { cursor: pointer; }
         ftGo();
         break;
       case "ft-reset":
+        if (pkOn()) delete cur.doingAt; // プランクをやめた：「セット中」も終わり（保存は pkStop で）
+        pkStop();
         ftReset();
         break;
       case "start": {
@@ -2912,6 +3092,8 @@ button { cursor: pointer; }
         cur.nowEx = cur.items[i].exId;
         cur.doingAt = Date.now(); // 押した時からトレーニング中（始める前でも休憩中でも）
         if (!cur.startedAt) cur.startedAt = Date.now();
+        unlockAudio();
+        if (cur.items[i].rx.unit === "sec") pkStart(i); else pkStop(); // 秒の種目は、残りのセットを続けて計る
         saveCur(); renderMenu();
         const el = document.getElementById(`ex-${i}`);
         if (el) el.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
@@ -3080,6 +3262,8 @@ button { cursor: pointer; }
         if (st.done) cur.lastAt = Date.now();
         if (cur.focus === i && itemDone(cur.items[i])) cur.focus = null;
         if (st.done && !cur.startedAt) cur.startedAt = Date.now();
+        if (st.done) pkSkip(cur.items[i], j); // 計っているセットなら、そこで打ち切って次の段階へ
+        pkAck(cur.items[i], [j]); // 光っていた完了ボタンは押したら消える
         if (st.done) markRest(i); else clearRest(); // セットを終えたら、上のバーが休憩中になる
         saveCur(); renderMenu();
         break;
@@ -3088,6 +3272,7 @@ button { cursor: pointer; }
         const it = cur.items[i];
         const all = itemDone(it);
         it.sets.forEach((x) => { x.done = !all; });
+        pkAck(it, it.sets.map((_, j) => j));
         if (!all) cur.lastAt = Date.now();
         if (!all && cur.focus === i) cur.focus = null;
         if (!all && !cur.startedAt) cur.startedAt = Date.now();
@@ -3259,7 +3444,7 @@ button { cursor: pointer; }
     if (cur !== before) switchTab(tab); // 前の日の分を締めた → 今日のメニューに
     else if (tab === "menu") renderMenu(); // 記録中のまま、日付の表示だけ新しく
   }
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkDayChange(); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { checkDayChange(); pkLoop(); pkLock(); } });
   window.addEventListener("focus", checkDayChange);
   setInterval(() => { checkDayChange(); checkSteps(); }, 60000);
   setInterval(tickStat, 250);
@@ -3275,6 +3460,9 @@ button { cursor: pointer; }
   // 起動
   ensureToday();
   renderMenu();
+  // 開き直した：音の種類を元に戻し、計っている途中なら時刻から今の段階を出して続ける（音はタップするまで鳴らせない）
+  try { if (navigator.audioSession && navigator.audioSession.type === "playback") navigator.audioSession.type = "auto"; } catch (e) { /* 対応していない端末 */ }
+  if (pkOn()) { pkNeedTap = !cur.pk.pausedAt; pkRun(); pkLoop(); }
   // 起動時のロゴ：1.8秒（動きを減らす設定の時は0.6秒）で消える。押すとすぐ消える
   const splash = $("#splash");
   if (splash) {
