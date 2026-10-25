@@ -2067,12 +2067,12 @@ button { cursor: pointer; }
       && num(p.rs, 1, 3600) && Number.isFinite(p.t0) && Number.isFinite(p.pausedAt) && p.pausedAt >= 0;
   };
   const pkKey = (p) => `${p.exId}:${p.t0}`;
-  const pkSegs = (secs, rs) => secs.flatMap((len, k) => [{ ph: "prep", k, len: PK_PREP }, { ph: "set", k, len }].concat(k < secs.length - 1 ? [{ ph: "rest", k, len: rs }] : []));
+  const pkSegs = (secs, rs, tr) => secs.flatMap((len, k) => [{ ph: "prep", k, len: PK_PREP }, { ph: "set", k, len }].concat(k < secs.length - 1 || tr ? [{ ph: "rest", k, len: rs }] : [])); // tr：先のセットを外して、いまの休憩が最後になった
   // いまの段階を時刻から出す（保存はしない）。いまの種目にあるセットだけを数える（−セットで減ったら、計る残りも減る）
   function pkCalc(p, it, now) {
     const js = [], secs = [];
     p.js.forEach((j, k) => { if (j < it.sets.length) { js.push(j); secs.push(p.secs[k]); } });
-    const segs = pkSegs(secs, p.rs), starts = [];
+    const segs = pkSegs(secs, p.rs, p.tr === true), starts = [];
     segs.reduce((a, g) => (starts.push(a), a + g.len), 0);
     const e = Math.max(0, (Math.min(p.pausedAt || now, now) - p.t0) / 1000);
     let s = 0;
@@ -2101,6 +2101,22 @@ button { cursor: pointer; }
   function pkAck(it, js) {
     const p = cur && cur.pk;
     if (pkOk(p) && p.exId === it.exId) p.ack = [...new Set((Array.isArray(p.ack) ? p.ack : []).filter(Number.isInteger).concat(js))]; // 同じ番号は重ねない
+  }
+  // 計っているセットの完了を押した：そのセットの残りを打ち切って、すぐ次の段階へ（t0 を前へずらす。最後のセットなら終わり）。
+  // 先のセットなら計る対象から外す。前のセット（光っている完了）なら何もしない。保存は押した操作のほうでする
+  function pkSkip(it, j) {
+    const a = pkStage();
+    if (!a || a.fin || a.p.exId !== it.exId) return;
+    const k = a.js.indexOf(j), p = a.p, g = a.segs[a.s];
+    if (k < 0 || k < g.k || (k === g.k && g.ph === "rest")) return;
+    if (k === g.k) { // いま計っているセット：打ち切った分だけ先へ進める（時間切れの音は鳴らさない：開始時刻が変わるので、このタブは「新しい計測」と見て鳴らさない）
+      const si = a.segs.findIndex((x) => x.ph === "set" && x.k === k);
+      p.t0 -= (a.starts[si] + a.segs[si].len - a.e) * 1000;
+      return;
+    }
+    if (g.ph === "rest" && g.k === k - 1 && k === a.js.length - 1) p.tr = true; // 最後のセットを外す：いまの休憩はそのまま続けて最後にする
+    const r = p.js.indexOf(j);
+    p.js.splice(r, 1); p.secs.splice(r, 1);
   }
   // 画面が消えないように（対応していない・断られたときは何もしない）
   function pkLock() {
@@ -3246,6 +3262,7 @@ button { cursor: pointer; }
         if (st.done) cur.lastAt = Date.now();
         if (cur.focus === i && itemDone(cur.items[i])) cur.focus = null;
         if (st.done && !cur.startedAt) cur.startedAt = Date.now();
+        if (st.done) pkSkip(cur.items[i], j); // 計っているセットなら、そこで打ち切って次の段階へ
         pkAck(cur.items[i], [j]); // 光っていた完了ボタンは押したら消える
         if (st.done) markRest(i); else clearRest(); // セットを終えたら、上のバーが休憩中になる
         saveCur(); renderMenu();
