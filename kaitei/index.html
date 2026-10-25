@@ -2243,7 +2243,7 @@ button { cursor: pointer; }
     if (it) n = ex.name.replace(/（.*）/, "");
     const started = it && it.exId === cur.nowEx && Number.isFinite(cur.doingAt) && cur.doingAt >= restAtNow(); // ▶ で始めた
     // プランクを ▶ で計り終わった（完了を押すまで）：最後のセットが終わった時から休憩
-    const pkFin = !pk && pa && pa.fin && pa.it === it && Number.isFinite(cur.doingAt) && pa.p.t0 >= cur.doingAt;
+    const pkFin = !pk && pa && pa.fin && pa.it === it && !(Number.isFinite(cur.doingAt) && cur.doingAt > pa.lastEnd); // 終わったあとに ▶ を押していなければ
     if (it && it.part === "cardio" && started) { cls = "doing"; l = n; t = fmtSec(Math.floor((Date.now() - Math.min(cur.doingAt, Date.now())) / 1000)); n = ""; }
     else if (it && it.part === "cardio") { cls = "wait cardio"; l = n; t = ""; n = aimText(it.rx).replace(/<\/?b>| /g, "") || "有酸素"; }
     else if (it && pk) {
