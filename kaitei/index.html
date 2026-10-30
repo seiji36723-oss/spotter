@@ -2193,14 +2193,14 @@ button { cursor: pointer; }
     const grew = !first && a.upJ.length > pkSeen.n;
     if (first) pkSeen = { key, n: a.upJ.length, at: now }; else { pkSeen.at = now; if (grew) pkSeen.n = a.upJ.length; }
     if (grew) { // セットの時間になった：音・振動（20秒以上前なら鳴らさない）と、完了ボタンを光らせる
-      if (now - a.lastEnd < 20000) alarm("プランク", `${a.upJ[a.upJ.length - 1] + 1}セット目、時間です`);
+      if (now - a.lastEnd < 20000 && !NATIVE) alarm("プランク", `${a.upJ[a.upJ.length - 1] + 1}セット目、時間です`);
       if (tab === "menu") renderMenu();
     }
     if (a.fin) { pkEnd(); return false; } // 全部計り終わった：右上は「0から数える」に戻る
     if (!pkLive) pkRun(); // −セットで終わった形にしたあと ＋セットで時間の中に戻った：動かし直す
     const g = a.segs[a.s], left = Math.max(1, Math.ceil(g.len - (a.e - a.starts[a.s])));
     const bk = `${a.s}:${left}`;
-    if (g.ph === "prep" && bk !== pkBeepKey && !p.pausedAt) beep(1); // 3・2・1 の短い音
+    if (g.ph === "prep" && bk !== pkBeepKey && !p.pausedAt && !NATIVE) beep(1); // 3・2・1 の短い音（Android アプリではアプリ側が鳴らす）
     pkBeepKey = bk;
     const tm = $("#ftTime"), pill = $("#ftPill"), go = $("#ftGo");
     $("#ftLab").textContent = g.ph === "prep" ? "準備" : g.ph === "set" ? `${a.js[g.k] + 1}/${it.sets.length}` : "休憩";
@@ -2211,6 +2211,18 @@ button { cursor: pointer; }
     go.setAttribute("aria-label", p.pausedAt ? "プランクを再開" : "プランクを一時停止");
     $("#ftHint").hidden = !(pkNeedTap && !p.pausedAt);
     return true;
+  }
+  // セットの完了ボタン：完了と未完了を切りかえる
+  function toggleSet(i, j) {
+    const st = cur.items[i].sets[j];
+    st.done = !st.done;
+    if (st.done) cur.lastAt = Date.now();
+    if (cur.focus === i && itemDone(cur.items[i])) cur.focus = null;
+    if (st.done && !cur.startedAt) cur.startedAt = Date.now();
+    if (st.done) pkSkip(cur.items[i], j); // 計っているセットなら、そこで打ち切って次の段階へ
+    pkAck(cur.items[i], [j]); // 光っていた完了ボタンは押したら消える
+    if (st.done) markRest(i); else clearRest(); // セットを終えたら、上のバーが休憩中になる
+    saveCur(); renderMenu();
   }
   // 種目の ▶：押した時からトレーニング中（始める前でも休憩中でも）。秒の種目は、残りのセットを続けて計る
   function startItem(i) {
@@ -2238,6 +2250,73 @@ button { cursor: pointer; }
     startItem(k);
     tickStat();
   }
+  // ── Android アプリの通知（ロック画面・通知センター）：いまの状態と、この先の段階の時刻を渡す ──
+  // 渡すもの：segs = [{ s:始まる時刻, e:終わる時刻（0は終わりなし）, t:見出し, n:種目など, down:残りを数える, beep:3・2・1, alarm:終わりで音と振動, acts:[ボタン] }]
+  // ボタン：start（▶）・done（完了）・skip（飛ばす）・pause（一時停止／再開）。押すと window.spotterAction に届く
+  const NATIVE = window.SpotterNative && typeof window.SpotterNative.update === "function" ? window.SpotterNative : null;
+  let nativeLast = "";
+  function nativeState() {
+    if (!cur || !cur.startedAt || !cur.items.length || cur.items.every(itemDone)) return { segs: [] };
+    const nm = (it) => EX[it.exId].name.replace(/（.*）/, "");
+    const nextNo = (it) => { const j = it.sets.findIndex((x) => !x.done); return `${(j < 0 ? it.sets.length : j) + 1}/${it.sets.length}セット目`; };
+    const pa = pkStage();
+    if (pa) {
+      const { p, it } = pa, name = nm(it), N = it.sets.length;
+      const rest = `休憩（目安${fmtSec(p.rs)}）`;
+      if (!pa.fin && p.pausedAt) return { paused: true, segs: [{ s: 0, e: 0, t: "一時停止中", n: name, acts: ["pause"] }] };
+      if (!pa.fin) {
+        const segs = pa.segs.map((g, q) => {
+          const s = p.t0 + pa.starts[q] * 1000, e = s + g.len * 1000, no = `${pa.js[g.k] + 1}/${N}セット目`;
+          if (g.ph === "prep") return { s, e, t: "準備", n: `${name} ${no}`, down: true, beep: true, acts: ["skip", "pause"] };
+          if (g.ph === "set") return { s, e, t: no, n: name, down: true, alarm: true, acts: ["done", "pause"] };
+          return { s, e, t: rest, n: name, down: true, acts: ["done", "skip", "pause"] };
+        });
+        const end = p.t0 + (pa.starts[pa.segs.length - 1] + pa.segs[pa.segs.length - 1].len) * 1000;
+        segs.push({ s: end, e: 0, t: rest, n: `${name}：完了を押す`, acts: ["done"] }); // 計り終わったあと
+        return { segs };
+      }
+    }
+    const k = nowIdx();
+    const it = k == null ? null : cur.items[k];
+    if (!it) return { segs: [] };
+    const name = nm(it), started = it.exId === cur.nowEx && Number.isFinite(cur.doingAt) && cur.doingAt >= restAtNow();
+    if (pa && pa.fin && pa.it === it && !(Number.isFinite(cur.doingAt) && cur.doingAt > pa.lastEnd)) {
+      return { segs: [{ s: pa.lastEnd, e: 0, t: `休憩（目安${fmtSec(pa.p.rs)}）`, n: `${name}：完了を押す`, acts: ["done"] }] };
+    }
+    if (it.part === "cardio") {
+      return { segs: [started ? { s: cur.doingAt, e: 0, t: name, n: "有酸素", acts: ["done"] } : { s: 0, e: 0, t: "次", n: name, acts: ["start"] }] };
+    }
+    const at = Number.isFinite(cur.restAt) ? cur.restAt : 0, rs = restSecOk();
+    if (Number.isFinite(cur.doingAt) && cur.doingAt >= at && it.exId === cur.nowEx) return { segs: [{ s: cur.doingAt, e: 0, t: "セット中", n: `${name} ${nextNo(it)}`, acts: ["done"] }] };
+    if (at && anyDone()) {
+      const e = at + rs * 1000;
+      return { segs: [{ s: at, e, t: `休憩（目安${fmtSec(rs)}）`, n: `次：${name} ${nextNo(it)}`, acts: ["skip"] }, { s: e, e: 0, t: "セット中", n: `${name} ${nextNo(it)}`, acts: ["done"] }] };
+    }
+    return { segs: [{ s: 0, e: 0, t: "次", n: `${name} ${nextNo(it)}`, acts: ["start"] }] };
+  }
+  function nativeSync() {
+    if (!NATIVE) return;
+    let j = "";
+    try { j = JSON.stringify(nativeState()); } catch (e) { return; }
+    if (j === nativeLast) return;
+    nativeLast = j;
+    try { NATIVE.update(j); } catch (e) { /* 渡せなくても画面はそのまま */ }
+  }
+  // 通知のボタンを押した（Android アプリから呼ばれる）
+  window.spotterAction = (a) => {
+    if (!cur || !cur.items.length) return;
+    tickStat();
+    const pa = pkStage();
+    if (a === "start") { const k = nowIdx(); if (k != null) startItem(k); }
+    else if (a === "skip") skipNow();
+    else if (a === "pause") { if (pkOn()) pkToggle(); }
+    else if (a === "done") {
+      if (pa && !pa.fin && pa.segs[pa.s].ph === "set") { const i = cur.items.indexOf(pa.it), j = pa.js[pa.segs[pa.s].k]; if (!pa.it.sets[j].done) toggleSet(i, j); }
+      else if (pa && pa.upJ.some((j) => !pa.it.sets[j].done)) { const i = cur.items.indexOf(pa.it); pa.upJ.filter((j) => !pa.it.sets[j].done).forEach((j) => toggleSet(i, j)); }
+      else { const k = nowIdx(); if (k != null) { const j = cur.items[k].sets.findIndex((x) => !x.done); if (j >= 0) toggleSet(k, j); } }
+    }
+    tickStat();
+  };
   // 種目の並び：上のアイコンで選んだ種目（いまやる）→ まだの筋トレ → まだの有酸素 → 終わったもの
   const itemOrder = () => cur.items.map((_, i) => i).sort((a, b) => itemDone(cur.items[a]) - itemDone(cur.items[b])
     || (b === cur.focus) - (a === cur.focus) || (cur.items[a].part === "cardio") - (cur.items[b].part === "cardio") || a - b);
@@ -2263,7 +2342,7 @@ button { cursor: pointer; }
   const restSecOk = () => (Number.isFinite(cur.restSec) && cur.restSec > 0 && cur.restSec <= 3600 ? cur.restSec : 90);
   function tickStat() {
     const el = $("#stat");
-    if (!cur || !cur.items.length) { el.hidden = true; return; } // 種目のない日（完全休息など）は出さない
+    if (!cur || !cur.items.length) { el.hidden = true; nativeSync(); return; } // 種目のない日（完全休息など）は出さない
     const pa = pkStage(); // プランクを計っている間は、右上と同じ段階を出す
     const pk = pa && !pa.fin ? pa : null;
     const k = pk ? cur.items.indexOf(pk.it) : nowIdx();
@@ -2308,6 +2387,7 @@ button { cursor: pointer; }
     }
     if (el.dataset.t !== t) { el.dataset.t = t; $("#statT").innerHTML = t; }
     $("#statN").textContent = n;
+    nativeSync();
   }
 
   // ── 毎日の早歩き（スタートで10分タイマー。夕方までにしていなければ促す） ──
@@ -3292,18 +3372,9 @@ button { cursor: pointer; }
         saveCur(); renderMenu();
         break;
       }
-      case "check": {
-        const st = cur.items[i].sets[j];
-        st.done = !st.done;
-        if (st.done) cur.lastAt = Date.now();
-        if (cur.focus === i && itemDone(cur.items[i])) cur.focus = null;
-        if (st.done && !cur.startedAt) cur.startedAt = Date.now();
-        if (st.done) pkSkip(cur.items[i], j); // 計っているセットなら、そこで打ち切って次の段階へ
-        pkAck(cur.items[i], [j]); // 光っていた完了ボタンは押したら消える
-        if (st.done) markRest(i); else clearRest(); // セットを終えたら、上のバーが休憩中になる
-        saveCur(); renderMenu();
+      case "check":
+        toggleSet(i, j);
         break;
-      }
       case "check-all": {
         const it = cur.items[i];
         const all = itemDone(it);
@@ -3498,7 +3569,12 @@ button { cursor: pointer; }
   renderMenu();
   // 開き直した：音の種類を元に戻し、計っている途中なら時刻から今の段階を出して続ける（音はタップするまで鳴らせない）
   try { if (navigator.audioSession && navigator.audioSession.type === "playback") navigator.audioSession.type = "auto"; } catch (e) { /* 対応していない端末 */ }
-  if (pkOn()) { pkNeedTap = !cur.pk.pausedAt; pkRun(); pkLoop(); }
+  if (pkOn()) { pkNeedTap = !cur.pk.pausedAt && !NATIVE; pkRun(); pkLoop(); }
+  // Android アプリ：画面を閉じている間に通知のボタンで押した操作を入れて、いまの状態を通知に渡す
+  if (NATIVE) {
+    try { JSON.parse(NATIVE.takeActions() || "[]").forEach((a) => window.spotterAction(a)); } catch (e) { /* なくても続ける */ }
+    nativeSync();
+  }
   // 起動時のロゴ：1.8秒（動きを減らす設定の時は0.6秒）で消える。押すとすぐ消える
   const splash = $("#splash");
   if (splash) {

@@ -11,6 +11,7 @@
 ## 通常版と改訂版
 - 通常版：https://seiji36723-oss.github.io/spotter/ （ふだん使う版。Android アプリもこちら）
 - 改訂版：https://seiji36723-oss.github.io/spotter/kaitei/ （手直しを先に入れて試す版）
+- 改訂版の Android アプリ：https://seiji36723-oss.github.io/spotter/kaitei/SPOTTER-kaitei.apk （「SPOTTER改」として通常版と並べて入れられる）
 
 改訂版の記録は通常版とは別に保存されます（初めて開いた時だけ通常版の記録を写します）。
 改訂版の内容を通常版に入れる時は `sh sync-kaitei.sh` を実行し、Android アプリを作り直して push します。
@@ -36,4 +37,6 @@ Android のスマホで https://seiji36723-oss.github.io/spotter/SPOTTER.apk を
 - `SPOTTER.apk` … Android アプリ本体（`index.html` を変えたら作り直す）
 - `android/` … Android アプリのしくみ（`index.html` を全画面で表示するだけ）
 - `android/build-apk.sh` … Gradle を使わずに `SPOTTER.apk` を作る手順（署名の鍵が必要）
+  - `EDITION=kaitei` をつけると、改訂版の `kaitei/SPOTTER-kaitei.apk` を作る
+- Android アプリでは、トレーニング中の状態を通知（ロック画面・通知センター）に出し、完了・飛ばす・一時停止のボタンで操作できる（`SpotterService.java`）
 - `setup/android.yml` … GitHub に APK を自動で作らせる手順（使う場合は `.github/workflows/android.yml` に移し、署名の鍵を Secrets に登録）

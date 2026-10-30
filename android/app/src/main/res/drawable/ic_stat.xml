@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 通知の小さなアイコン（ダンベル） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+  android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+  <path android:fillColor="#FFFFFFFF" android:pathData="M1.5,10h2v4h-2z M4.5,7h3.5v10h-3.5z M8,11h8v2h-8z M16,7h3.5v10h-3.5z M20.5,10h2v4h-2z" />
+</vector>

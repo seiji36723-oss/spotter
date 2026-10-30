@@ -6,3 +6,4 @@ local.properties
 *.idsig
 # 配る Android アプリはリポジトリに入れる
 !/SPOTTER.apk
+!/kaitei/SPOTTER-kaitei.apk
