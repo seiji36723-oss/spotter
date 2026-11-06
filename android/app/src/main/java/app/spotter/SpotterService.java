@@ -38,6 +38,7 @@ public class SpotterService extends Service {
   private boolean fg;
   private PowerManager.WakeLock wl;
   private ToneGenerator tone;
+  private ToneGenerator loud; // 時間になった音（アラームの音量で、大きめに）
 
   private final Runnable tick = new Runnable() {
     public void run() { onTick(); }
@@ -70,6 +71,7 @@ public class SpotterService extends Service {
     inst = this;
     makeChannel();
     try { tone = new ToneGenerator(AudioManager.STREAM_MUSIC, 90); } catch (Exception e) { tone = null; }
+    try { loud = new ToneGenerator(AudioManager.STREAM_ALARM, 100); } catch (Exception e) { loud = null; }
   }
 
   @Override public int onStartCommand(Intent intent, int flags, int startId) {
@@ -87,6 +89,7 @@ public class SpotterService extends Service {
     h.removeCallbacks(tick);
     lock(0);
     if (tone != null) tone.release();
+    if (loud != null) loud.release();
     if (inst == this) inst = null;
     super.onDestroy();
   }
@@ -188,7 +191,7 @@ public class SpotterService extends Service {
           }
         }
         if (g.optBoolean("alarm") && e > 0) {
-          if (e <= now && now - e < 20000 && fired.add(-e)) { beep(3); vibrate(); }
+          if (e <= now && now - e < 20000 && fired.add(-e)) { longBeep(); vibrate(); }
           if (e > now) next = Math.max(next, e);
         }
       }
@@ -223,10 +226,21 @@ public class SpotterService extends Service {
     }
   }
 
+  // 時間になった：「ピピピッ」を3回、約3秒
+  void longBeep() {
+    final ToneGenerator t = loud != null ? loud : tone;
+    if (t == null) return;
+    for (int k = 0; k < 9; k++) {
+      h.postDelayed(new Runnable() {
+        public void run() { try { t.startTone(ToneGenerator.TONE_PROP_BEEP, 120); } catch (Exception e) { /* 鳴らせなくても続ける */ } }
+      }, (k / 3) * 1050L + (k % 3) * 170L);
+    }
+  }
+
   void vibrate() {
     try {
       Vibrator v = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-      if (v != null) v.vibrate(new long[] { 0, 250, 120, 250 }, -1);
+      if (v != null) v.vibrate(new long[] { 0, 400, 150, 400, 150, 400, 150, 400 }, -1);
     } catch (Exception e) { /* 対応していない端末 */ }
   }
 

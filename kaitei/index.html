@@ -2004,6 +2004,26 @@ button { cursor: pointer; }
       }
     } catch (e) { /* 鳴らせなくても続ける */ }
   }
+  // プランクの時間になった音：大きめの「ピピピッ」を3回、約3秒
+  function longBeep() {
+    if (!audioCtx) return;
+    try {
+      for (let k = 0; k < 9; k++) {
+        const t0 = audioCtx.currentTime + Math.floor(k / 3) * 1.05 + (k % 3) * 0.17;
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = "square";
+        o.frequency.value = 1050;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.01);
+        g.gain.setValueAtTime(0.5, t0 + 0.11);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.13);
+        o.connect(g).connect(audioCtx.destination);
+        o.start(t0);
+        o.stop(t0 + 0.14);
+      }
+    } catch (e) { /* 鳴らせなくても続ける */ }
+  }
   // 通知（許可されている時だけ）。アプリ版はサービスワーカー経由で出す
   function notify(title, text) {
     try {
@@ -2193,7 +2213,11 @@ button { cursor: pointer; }
     const grew = !first && a.upJ.length > pkSeen.n;
     if (first) pkSeen = { key, n: a.upJ.length, at: now }; else { pkSeen.at = now; if (grew) pkSeen.n = a.upJ.length; }
     if (grew) { // セットの時間になった：音・振動（20秒以上前なら鳴らさない）と、完了ボタンを光らせる
-      if (now - a.lastEnd < 20000 && !NATIVE) alarm("プランク", `${a.upJ[a.upJ.length - 1] + 1}セット目、時間です`);
+      if (now - a.lastEnd < 20000 && !NATIVE) { // Android アプリではアプリ側が鳴らす
+        longBeep();
+        try { if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400, 150, 400]); } catch (e) { /* 対応していない端末 */ }
+        if (document.hidden) notify("プランク", `${a.upJ[a.upJ.length - 1] + 1}セット目、時間です`);
+      }
       if (tab === "menu") renderMenu();
     }
     if (a.fin) { pkEnd(); return false; } // 全部計り終わった：右上は「0から数える」に戻る
@@ -2402,6 +2426,8 @@ button { cursor: pointer; }
   const walkByCardio = (iso) => !walks[iso] && cardioMinOn(iso) >= WALK.min;
   const walkDoneOn = (iso) => !!walks[iso] || cardioMinOn(iso) >= WALK.min;
   const walkedToday = () => walkDoneOn(todayIso());
+  // 休みの日（完全休息・「できない」でお休みにした日）は早歩きもしない
+  const restToday = () => (cur && cur.date === todayIso() ? cur.type === "rest" && cur.skip !== "enough" : planFor(todayIso()).type === "rest");
   const walk = { end: 0, id: 0 };
   function startWalk() {
     walk.end = Date.now() + WALK.min * 60000;
@@ -2423,7 +2449,7 @@ button { cursor: pointer; }
     }
   }
   function checkSteps() {
-    if (new Date().getHours() < 17 || walkedToday()) return;
+    if (new Date().getHours() < 17 || walkedToday() || restToday()) return;
     if (load(LS.nudge, "") === todayIso()) return;
     save(LS.nudge, todayIso());
     notify("今日の早歩きがまだです", `${WALK.min}分、${WALK.speed}で歩きましょう`);
@@ -2690,6 +2716,7 @@ button { cursor: pointer; }
   // 早歩きのカード（速さはこちらで指示、時間は目安を出して本人が入れる。タイマーも使える）
   let walkMin = WALK.min;
   function stepsHTML() {
+    if (restToday()) return "";
     const done = walkedToday();
     const running = walk.end > Date.now();
     const got = walks[todayIso()];
@@ -2720,7 +2747,7 @@ button { cursor: pointer; }
       : `<span class="dh-parts">${cur.skip ? SKIP_LABEL[cur.skip] : t === "cardio" ? "有酸素だけの日" : t === "off" ? "雨の日・家でやる" : "完全休息の日"}</span>`;
     const tags = [cur.mode && MODES[cur.mode] && cur.mode !== "normal" ? MODES[cur.mode].name : "", cur.optional ? "任意" : "", cur.override ? "手で変更" : ""].filter(Boolean).map((x) => `<span class="dh-mode">${x}</span>`).join("");
     // 夕方になっても歩数が少ない日は、いちばん上で促す
-    const walkNudge = now.getHours() >= 17 && !walkedToday() ? `<p class="nudge">夕方です。早歩き${WALK.min}分（${WALK.speed}）がまだです</p>` : "";
+    const walkNudge = now.getHours() >= 17 && !walkedToday() && !restToday() ? `<p class="nudge">夕方です。早歩き${WALK.min}分（${WALK.speed}）がまだです</p>` : "";
     // 週1回：体重を測る日
     const lastBody = body.length ? body.map((b) => b.date).sort().pop() : null;
     const bodyNudge = !lastBody || daysBetween(lastBody, today) >= 7 ? `<button type="button" class="nudge link-like" data-act="goto-body">今日は体重を測る日 ›</button>` : "";
@@ -2745,7 +2772,7 @@ button { cursor: pointer; }
     } else if (t === "rest" && cur.skip) {
       main = `<div class="rest-day skip"><b>${cur.skip === "cant" ? "今日はお休み" : "今日はここまで"}</b><span>${cur.skip === "cant" ? "無理せず休みましょう" : "おつかれさま"}</span></div>`;
     } else if (t === "rest") {
-      main = `<div class="rest-day"><b>今日は体を休める日</b><span>早歩き${WALK.min}分だけやりましょう</span></div>`;
+      main = `<div class="rest-day"><b>今日は体を休める日</b><span>しっかり休みましょう</span></div>`;
     } else if (cur.items.length) {
       main = `<div class="list">${orderIdx.map((i) => card(cur.items[i], i)).join("")}</div>
         <button type="button" class="btn primary block" data-act="finish">記録して終える</button>`;
