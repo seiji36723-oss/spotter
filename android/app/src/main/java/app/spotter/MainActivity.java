@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
   @Override
   public void onBackPressed() {
     if (web.canGoBack()) web.goBack();
-    else super.onBackPressed();
+    else moveTaskToBack(true); // 戻るで閉じても、画面は残しておく（通知のボタンがすぐページに届くように）
   }
 
   // 通知のボタンを押した：ページに伝える（画面がなければ、開いた時に渡す）

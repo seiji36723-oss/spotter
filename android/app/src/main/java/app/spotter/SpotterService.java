@@ -38,6 +38,8 @@ public class SpotterService extends Service {
   private final HashSet<Long> fired = new HashSet<Long>(); // もう鳴らした時刻（同じ音を2回鳴らさない）
   private String shownKey = "";
   private boolean fg;
+  private boolean dead; // 止めた（このあと届いた状態は、新しいサービスに渡す）
+  private long lockUntil;
   private PowerManager.WakeLock wl;
   private ToneGenerator tone;
 
@@ -52,7 +54,7 @@ public class SpotterService extends Service {
       s.h.post(new Runnable() { public void run() { s.apply(json); } });
       return;
     }
-    if (count(json) == 0) return;
+    if (count(json) == 0) { pendingJson = null; return; }
     pendingJson = json;
     Intent i = new Intent(c, SpotterService.class);
     try {
@@ -70,6 +72,7 @@ public class SpotterService extends Service {
   @Override public void onCreate() {
     super.onCreate();
     inst = this;
+    dead = false;
     makeChannel();
     try { tone = new ToneGenerator(AudioManager.STREAM_MUSIC, 90); } catch (Exception e) { tone = null; }
   }
@@ -94,6 +97,7 @@ public class SpotterService extends Service {
   }
 
   void apply(String json) {
+    if (dead) { update(getApplicationContext(), json); return; }
     try {
       JSONObject o = new JSONObject(json);
       segs = o.getJSONArray("segs");
@@ -102,24 +106,26 @@ public class SpotterService extends Service {
       paused = p;
     } catch (Exception e) { segs = new JSONArray(); }
     if (segs.length() == 0) { stopNow(); return; }
-    skipPast(System.currentTimeMillis());
+    skipPast(System.currentTimeMillis(), 900);
     shownKey = "";
     onTick();
   }
 
   // 新しい段階を受け取った：もう過ぎた音は鳴らさない（飛ばした・打ち切ったときに鳴らないように）。
-  // ただし ▶ を押した直後の最初の「3」は鳴らす
-  void skipPast(long now) {
+  // ただし ▶ を押した直後の最初の「3」は鳴らす（サービスが動き出すまでの遅れを見て 0.9秒まで）
+  void skipPast(long now, long grace) {
     for (int q = 0; q < segs.length(); q++) {
       JSONObject g = segs.optJSONObject(q);
       if (g == null) continue;
       long s = g.optLong("s"), e = g.optLong("e");
-      if (g.optBoolean("beep")) for (int k = 0; k < 3; k++) { long t = s + k * 1000L; if (t <= now - 300) fired.add(t); }
+      if (g.optBoolean("beep")) for (int k = 0; k < 3; k++) { long t = s + k * 1000L; if (t <= now - grace) fired.add(t); }
       if ((g.optBoolean("alarm") || g.optBoolean("restEnd")) && e > 0 && e <= now) fired.add(-e);
     }
   }
 
   void stopNow() {
+    dead = true;
+    if (inst == this) inst = null;
     h.removeCallbacks(tick);
     lock(0);
     if (fg) { stopForeground(true); fg = false; }
@@ -131,7 +137,11 @@ public class SpotterService extends Service {
     if (a == null) return;
     long now = System.currentTimeMillis();
     try {
-      if ("skip".equals(a) && !paused) {
+      // 古い通知のボタンなど、いまの段階にないボタンは、ページに伝えるだけ（通知は先に動かさない）
+      JSONObject cg = segs.length() > 0 ? segs.getJSONObject(current(now)) : null;
+      JSONArray ca = cg != null ? cg.optJSONArray("acts") : null;
+      boolean here = ca != null && ca.toString().contains("\"" + a + "\"");
+      if (here && "skip".equals(a) && !paused) {
         int i = current(now);
         JSONObject g = segs.getJSONObject(i);
         long e = g.optLong("e");
@@ -141,11 +151,12 @@ public class SpotterService extends Service {
           fired.add(-now); // 飛ばした休憩の終わりの音は鳴らさない
           for (int q = i + 1; q < segs.length(); q++) shift(segs.getJSONObject(q), -d);
         }
-      } else if ("pause".equals(a)) {
+      } else if (here && "pause".equals(a)) {
         if (paused) {
           long d = now - pausedAt;
           for (int q = 0; q < segs.length(); q++) shift(segs.getJSONObject(q), d);
           paused = false;
+          skipPast(now, 0); // 止める前に鳴らした音は、ずらしても鳴らし直さない
         } else { paused = true; pausedAt = now; }
       }
     } catch (Exception e) { /* 形が違うときは、ページの返事にまかせる */ }
@@ -215,8 +226,12 @@ public class SpotterService extends Service {
   void lock(long ms) {
     try {
       if (ms > 0) {
-        if (wl == null) wl = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "spotter:timer");
-        if (!wl.isHeld()) wl.acquire(ms);
+        if (wl == null) {
+          wl = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "spotter:timer");
+          wl.setReferenceCounted(false); // 取り直すと、時間が後ろにのびる
+        }
+        long until = System.currentTimeMillis() + ms;
+        if (!wl.isHeld() || until > lockUntil + 1000) { wl.acquire(ms); lockUntil = until; }
       } else if (wl != null && wl.isHeld()) wl.release();
     } catch (Exception e) { /* 使えなくても続ける */ }
   }

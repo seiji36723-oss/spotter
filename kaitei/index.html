@@ -2338,7 +2338,7 @@ button { cursor: pointer; }
     else if (a === "pause") { if (pkOn()) pkToggle(); }
     else if (a === "done") {
       if (pa && !pa.fin && pa.segs[pa.s].ph === "set") { const i = cur.items.indexOf(pa.it), j = pa.js[pa.segs[pa.s].k]; if (!pa.it.sets[j].done) toggleSet(i, j); }
-      else if (pa && pa.upJ.some((j) => !pa.it.sets[j].done)) { const i = cur.items.indexOf(pa.it); pa.upJ.filter((j) => !pa.it.sets[j].done).forEach((j) => toggleSet(i, j)); }
+      else if (pa) { const i = cur.items.indexOf(pa.it); pa.upJ.filter((j) => !pa.it.sets[j].done).forEach((j) => toggleSet(i, j)); } // プランクの休憩など：時間になったセットだけ（まだ計っていないセットは完了にしない）
       else { const k = nowIdx(); if (k != null) { const j = cur.items[k].sets.findIndex((x) => !x.done); if (j >= 0) toggleSet(k, j); } }
     }
     tickStat();
