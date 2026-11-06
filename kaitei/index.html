@@ -2004,26 +2004,28 @@ button { cursor: pointer; }
       }
     } catch (e) { /* 鳴らせなくても続ける */ }
   }
-  // プランクの時間になった音：大きめの「ピピピッ」を3回、約3秒
-  function longBeep() {
+  // 大きめの音（どれも同じ大きさで、長さで聞き分ける）：parts = [[鳴り始め（秒後）, 長さ（秒）], …]
+  function loudTone(parts) {
     if (!audioCtx) return;
     try {
-      for (let k = 0; k < 9; k++) {
-        const t0 = audioCtx.currentTime + Math.floor(k / 3) * 1.05 + (k % 3) * 0.17;
+      parts.forEach(([at, len]) => {
+        const t0 = audioCtx.currentTime + at;
         const o = audioCtx.createOscillator();
         const g = audioCtx.createGain();
         o.type = "square";
         o.frequency.value = 1050;
         g.gain.setValueAtTime(0.0001, t0);
         g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.01);
-        g.gain.setValueAtTime(0.5, t0 + 0.11);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.13);
+        g.gain.setValueAtTime(0.5, t0 + len - 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
         o.connect(g).connect(audioCtx.destination);
         o.start(t0);
-        o.stop(t0 + 0.14);
-      }
+        o.stop(t0 + len + 0.01);
+      });
     } catch (e) { /* 鳴らせなくても続ける */ }
   }
+  const longBeep = () => loudTone([[0, 3]]); // プランクの時間になった：「ピーーー」と3秒
+  const restEndBeep = () => loudTone([[0, 0.15], [0.27, 0.15]]); // 休憩の目安になった：短く「ピッピッ」
   // 通知（許可されている時だけ）。アプリ版はサービスワーカー経由で出す
   function notify(title, text) {
     try {
@@ -2275,7 +2277,7 @@ button { cursor: pointer; }
     tickStat();
   }
   // ── Android アプリの通知（ロック画面・通知センター）：いまの状態と、この先の段階の時刻を渡す ──
-  // 渡すもの：segs = [{ s:始まる時刻, e:終わる時刻（0は終わりなし）, t:見出し, n:種目など, down:残りを数える, beep:3・2・1, alarm:終わりで音と振動, acts:[ボタン] }]
+  // 渡すもの：segs = [{ s:始まる時刻, e:終わる時刻（0は終わりなし）, t:見出し, n:種目など, down:残りを数える, beep:3・2・1, alarm:終わりで音と振動, restEnd:終わりで休憩の終わりの音, acts:[ボタン] }]
   // ボタン：start（▶）・done（完了）・skip（飛ばす）・pause（一時停止／再開）。押すと window.spotterAction に届く
   const NATIVE = window.SpotterNative && typeof window.SpotterNative.update === "function" ? window.SpotterNative : null;
   let nativeLast = "";
@@ -2314,7 +2316,7 @@ button { cursor: pointer; }
     if (Number.isFinite(cur.doingAt) && cur.doingAt >= at && it.exId === cur.nowEx) return { segs: [{ s: cur.doingAt, e: 0, t: "セット中", n: `${name} ${nextNo(it)}`, acts: ["done"] }] };
     if (at && anyDone()) {
       const e = at + rs * 1000;
-      return { segs: [{ s: at, e, t: `休憩（目安${fmtSec(rs)}）`, n: `次：${name} ${nextNo(it)}`, acts: ["skip"] }, { s: e, e: 0, t: "セット中", n: `${name} ${nextNo(it)}`, acts: ["done"] }] };
+      return { segs: [{ s: at, e, t: `休憩（目安${fmtSec(rs)}）`, n: `次：${name} ${nextNo(it)}`, restEnd: true, acts: ["skip"] }, { s: e, e: 0, t: "セット中", n: `${name} ${nextNo(it)}`, acts: ["done"] }] };
     }
     return { segs: [{ s: 0, e: 0, t: "次", n: `${name} ${nextNo(it)}`, acts: ["start"] }] };
   }
@@ -2364,6 +2366,7 @@ button { cursor: pointer; }
   // 休憩を始めた時刻と目安の秒（時計が戻ったときは今にそろえる。壊れた値は使わない）
   const restAtNow = () => (Number.isFinite(cur.restAt) ? Math.min(cur.restAt, Date.now()) : 0);
   const restSecOk = () => (Number.isFinite(cur.restSec) && cur.restSec > 0 && cur.restSec <= 3600 ? cur.restSec : 90);
+  let restRung = 0; // 休憩の終わりの音を鳴らした休憩（始めた時刻）
   function tickStat() {
     const el = $("#stat");
     if (!cur || !cur.items.length) { el.hidden = true; nativeSync(); return; } // 種目のない日（完全休息など）は出さない
@@ -2392,6 +2395,11 @@ button { cursor: pointer; }
       const sec = at && anyDone() ? (Date.now() - at) / 1000 : started ? 0 : -1;
       // トレーニング中：休憩中に ▶ を押した時刻か、目安を過ぎた時刻から（ここでは保存しない。別のタブの記録を上書きしないため）
       const doingFrom = Number.isFinite(cur.doingAt) && cur.doingAt >= at ? Math.min(cur.doingAt, Date.now()) : sec >= rs ? at + rs * 1000 : 0;
+      // 休憩の目安になった：「ピッピッ」（▶・⏭ で先に始めたときは鳴らさない。Android アプリではアプリ側が鳴らす）
+      if (at && sec >= rs && sec < rs + 5 && !(Number.isFinite(cur.doingAt) && cur.doingAt >= at) && restRung !== at) {
+        restRung = at;
+        if (!NATIVE) { restEndBeep(); try { if (navigator.vibrate) navigator.vibrate([150, 100, 150]); } catch (e) { /* 対応していない端末 */ } }
+      }
       if (sec < 0) { cls = "wait"; l = "次"; }
       else if (doingFrom) { cls = "doing"; l = "セット中"; t = fmtSec(Math.floor((Date.now() - doingFrom) / 1000)); n = ""; }
       else { cls = "rest"; l = `休憩・目安${fmtSec(rs)}`; t = fmtSec(Math.floor(sec)); n = ""; skip = "休憩を飛ばして次のセットへ"; }
@@ -2426,8 +2434,8 @@ button { cursor: pointer; }
   const walkByCardio = (iso) => !walks[iso] && cardioMinOn(iso) >= WALK.min;
   const walkDoneOn = (iso) => !!walks[iso] || cardioMinOn(iso) >= WALK.min;
   const walkedToday = () => walkDoneOn(todayIso());
-  // 休みの日（完全休息・「できない」でお休みにした日）は早歩きもしない
-  const restToday = () => (cur && cur.date === todayIso() ? cur.type === "rest" && cur.skip !== "enough" : planFor(todayIso()).type === "rest");
+  // 早歩きをしない日：休みの日（完全休息・「できない」でお休みにした日）と、家でやる日（雨の日）
+  const restToday = () => (cur && cur.date === todayIso() ? (cur.type === "rest" && cur.skip !== "enough") || cur.type === "off" : ["rest", "off"].includes(planFor(todayIso()).type));
   const walk = { end: 0, id: 0 };
   function startWalk() {
     walk.end = Date.now() + WALK.min * 60000;

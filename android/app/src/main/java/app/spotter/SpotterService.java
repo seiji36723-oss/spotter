@@ -6,7 +6,9 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.media.ToneGenerator;
 import android.os.Build;
 import android.os.Handler;
@@ -38,7 +40,6 @@ public class SpotterService extends Service {
   private boolean fg;
   private PowerManager.WakeLock wl;
   private ToneGenerator tone;
-  private ToneGenerator loud; // 時間になった音（アラームの音量で、大きめに）
 
   private final Runnable tick = new Runnable() {
     public void run() { onTick(); }
@@ -71,7 +72,6 @@ public class SpotterService extends Service {
     inst = this;
     makeChannel();
     try { tone = new ToneGenerator(AudioManager.STREAM_MUSIC, 90); } catch (Exception e) { tone = null; }
-    try { loud = new ToneGenerator(AudioManager.STREAM_ALARM, 100); } catch (Exception e) { loud = null; }
   }
 
   @Override public int onStartCommand(Intent intent, int flags, int startId) {
@@ -89,7 +89,6 @@ public class SpotterService extends Service {
     h.removeCallbacks(tick);
     lock(0);
     if (tone != null) tone.release();
-    if (loud != null) loud.release();
     if (inst == this) inst = null;
     super.onDestroy();
   }
@@ -116,7 +115,7 @@ public class SpotterService extends Service {
       if (g == null) continue;
       long s = g.optLong("s"), e = g.optLong("e");
       if (g.optBoolean("beep")) for (int k = 0; k < 3; k++) { long t = s + k * 1000L; if (t <= now - 300) fired.add(t); }
-      if (g.optBoolean("alarm") && e > 0 && e <= now) fired.add(-e);
+      if ((g.optBoolean("alarm") || g.optBoolean("restEnd")) && e > 0 && e <= now) fired.add(-e);
     }
   }
 
@@ -139,6 +138,7 @@ public class SpotterService extends Service {
         if (e > now) {
           long d = e - now;
           g.put("e", now);
+          fired.add(-now); // 飛ばした休憩の終わりの音は鳴らさない
           for (int q = i + 1; q < segs.length(); q++) shift(segs.getJSONObject(q), -d);
         }
       } else if ("pause".equals(a)) {
@@ -191,7 +191,11 @@ public class SpotterService extends Service {
           }
         }
         if (g.optBoolean("alarm") && e > 0) {
-          if (e <= now && now - e < 20000 && fired.add(-e)) { longBeep(); vibrate(); }
+          if (e <= now && now - e < 20000 && fired.add(-e)) { loud(new int[] { 3000 }); vibrate(new long[] { 0, 400, 150, 400, 150, 400, 150, 400 }); }
+          if (e > now) next = Math.max(next, e);
+        }
+        if (g.optBoolean("restEnd") && e > 0) { // 休憩の目安になった
+          if (e <= now && now - e < 20000 && fired.add(-e)) { loud(new int[] { 150, 120, 150 }); vibrate(new long[] { 0, 150, 100, 150 }); }
           if (e > now) next = Math.max(next, e);
         }
       }
@@ -226,21 +230,34 @@ public class SpotterService extends Service {
     }
   }
 
-  // 時間になった：「ピピピッ」を3回、約3秒
-  void longBeep() {
-    final ToneGenerator t = loud != null ? loud : tone;
-    if (t == null) return;
-    for (int k = 0; k < 9; k++) {
-      h.postDelayed(new Runnable() {
-        public void run() { try { t.startTone(ToneGenerator.TONE_PROP_BEEP, 120); } catch (Exception e) { /* 鳴らせなくても続ける */ } }
-      }, (k / 3) * 1050L + (k % 3) * 170L);
+  // 大きめの音（アラームの音量。どれも同じ大きさで、長さで聞き分ける）：ms = { 鳴らす, 休む, 鳴らす, … } のミリ秒
+  // プランクの時間：{ 3000 }（ピーーー）、休憩の終わり：{ 150, 120, 150 }（ピッピッ）
+  void loud(int[] ms) {
+    final int rate = 44100, period = rate / 1050;
+    int total = 0;
+    for (int m : ms) total += m;
+    final short[] buf = new short[rate * total / 1000];
+    int pos = 0;
+    for (int q = 0; q < ms.length; q++) {
+      int n = rate * ms[q] / 1000, fade = rate / 100;
+      for (int k = 0; k < n && pos < buf.length; k++, pos++) {
+        if (q % 2 == 1) continue; // 休む
+        float env = Math.min(1f, Math.min(k, n - k) / (float) fade);
+        buf[pos] = (short) (((pos % period) < period / 2 ? 16000 : -16000) * env);
+      }
     }
+    try {
+      final AudioTrack t = new AudioTrack(AudioManager.STREAM_ALARM, rate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, buf.length * 2, AudioTrack.MODE_STATIC);
+      t.write(buf, 0, buf.length);
+      t.play();
+      h.postDelayed(new Runnable() { public void run() { try { t.release(); } catch (Exception e) { /* 終わっている */ } } }, total + 500L);
+    } catch (Exception e) { /* 鳴らせなくても続ける */ }
   }
 
-  void vibrate() {
+  void vibrate(long[] pattern) {
     try {
       Vibrator v = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-      if (v != null) v.vibrate(new long[] { 0, 400, 150, 400, 150, 400, 150, 400 }, -1);
+      if (v != null) v.vibrate(pattern, -1);
     } catch (Exception e) { /* 対応していない端末 */ }
   }
 
