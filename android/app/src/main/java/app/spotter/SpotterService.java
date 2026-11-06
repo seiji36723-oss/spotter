@@ -202,11 +202,11 @@ public class SpotterService extends Service {
           }
         }
         if (g.optBoolean("alarm") && e > 0) {
-          if (e <= now && now - e < 20000 && fired.add(-e)) { loud(new int[] { 3000 }); vibrate(new long[] { 0, 400, 150, 400, 150, 400, 150, 400 }); }
+          if (e <= now && now - e < 20000 && fired.add(-e)) { loud(new int[] { 3000 }, 1050); vibrate(new long[] { 0, 400, 150, 400, 150, 400, 150, 400 }); }
           if (e > now) next = Math.max(next, e);
         }
         if (g.optBoolean("restEnd") && e > 0) { // 休憩の目安になった
-          if (e <= now && now - e < 20000 && fired.add(-e)) { loud(new int[] { 150, 120, 150 }); vibrate(new long[] { 0, 150, 100, 150 }); }
+          if (e <= now && now - e < 20000 && fired.add(-e)) { loud(new int[] { 1000 }, 520); vibrate(new long[] { 0, 600 }); }
           if (e > now) next = Math.max(next, e);
         }
       }
@@ -246,9 +246,9 @@ public class SpotterService extends Service {
   }
 
   // 大きめの音（アラームの音量。どれも同じ大きさで、長さで聞き分ける）：ms = { 鳴らす, 休む, 鳴らす, … } のミリ秒
-  // プランクの時間：{ 3000 }（ピーーー）、休憩の終わり：{ 150, 120, 150 }（ピッピッ）
-  void loud(int[] ms) {
-    final int rate = 44100, period = rate / 1050;
+  // プランクの時間：{ 3000 }・1050Hz（ピーーー）、休憩の終わり：{ 1000 }・520Hz（低めのビー）
+  void loud(int[] ms, int hz) {
+    final int rate = 44100, period = rate / hz;
     int total = 0;
     for (int m : ms) total += m;
     final short[] buf = new short[rate * total / 1000];
